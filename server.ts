@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -55,8 +56,11 @@ async function startServer() {
       const { stdout } = await execAsync("wpctl get-volume @DEFAULT_AUDIO_SINK@");
       const match = stdout.match(/Volume:\s+([\d.]+)/);
       const isMuted = stdout.includes("[MUTED]");
-      res.json({ volume: match ? Math.round(parseFloat(match[1]) * 100) : 0, muted: isMuted });
-    } catch (error: any) { res.status(500).json({ error: error.message }); }
+      if (!match) throw new Error("Could not parse volume");
+      res.json({ volume: Math.round(parseFloat(match[1]) * 100), muted: isMuted });
+    } catch (error: any) { 
+      res.json({ error: "Audio service unavailable (wpctl failed or not found)" }); 
+    }
   });
 
   app.post("/api/system/audio", async (req, res) => {
@@ -104,6 +108,275 @@ async function startServer() {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
+  // --- AUTHENTICATION ---
+  const AUTH_FILE = path.join(process.cwd(), '.os_shadow.json');
+
+  app.get("/api/system/auth/status", (req, res) => {
+    try {
+      if (fs.existsSync(AUTH_FILE)) {
+        const data = JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
+        res.json({ isSetup: true, username: data.username });
+      } else {
+        res.json({ isSetup: false });
+      }
+    } catch (e) {
+      res.json({ isSetup: false });
+    }
+  });
+
+  app.post("/api/system/auth/setup", (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) return res.status(400).json({ error: "Missing fields" });
+      
+      // In a real OS, this would use PAM or shadow passwords. 
+      // For this React DE preview, we store a simple base64 hash in a hidden file.
+      const data = { username, password: Buffer.from(password).toString('base64') };
+      fs.writeFileSync(AUTH_FILE, JSON.stringify(data));
+      
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/system/auth/login", (req, res) => {
+    try {
+      const { password } = req.body;
+      if (!fs.existsSync(AUTH_FILE)) return res.status(400).json({ error: "No user setup" });
+      
+      const data = JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
+      const inputHash = Buffer.from(password).toString('base64');
+      
+      if (data.password === inputHash) {
+        res.json({ success: true });
+      } else {
+        res.status(401).json({ error: "Incorrect password" });
+      }
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- SETTINGS: ABOUT ---
+  app.get("/api/system/about", async (req, res) => {
+    try {
+      const kernel = (await execAsync("uname -r")).stdout.trim();
+      const arch = (await execAsync("uname -m")).stdout.trim();
+      let uptime = "";
+      try {
+        uptime = (await execAsync("uptime -p")).stdout.trim();
+      } catch (e) {
+        if (fs.existsSync("/proc/uptime")) {
+          const uptimeSeconds = parseFloat(fs.readFileSync("/proc/uptime", "utf-8").split(" ")[0]);
+          const hours = Math.floor(uptimeSeconds / 3600);
+          const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+          uptime = `up ${hours} hours, ${minutes} minutes`;
+        } else {
+          uptime = "Unknown";
+        }
+      }
+      
+      const cpuinfo = fs.existsSync("/proc/cpuinfo") ? fs.readFileSync("/proc/cpuinfo", "utf-8") : "";
+      const meminfo = fs.existsSync("/proc/meminfo") ? fs.readFileSync("/proc/meminfo", "utf-8") : "";
+      const cpuMatch = cpuinfo.match(/model name\s+:\s+(.+)/);
+      const memTotalMatch = meminfo.match(/MemTotal:\s+(\d+)\s+kB/);
+
+      res.json({ 
+        kernel, 
+        arch, 
+        uptime, 
+        os: "Arcadegamer254 os", 
+        version: "1.0.0-stable",
+        cpu: cpuMatch ? cpuMatch[1].trim() : "Unknown CPU",
+        ram: memTotalMatch ? Math.round(parseInt(memTotalMatch[1]) / 1024) + " MB" : "Unknown RAM"
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- SETTINGS: STORAGE ---
+  app.get("/api/system/storage", async (req, res) => {
+    try {
+      const { stdout } = await execAsync("df -h /");
+      const lines = stdout.trim().split('\n');
+      if (lines.length > 1) {
+        const parts = lines[1].trim().split(/\s+/);
+        res.json({
+          total: parts[1],
+          used: parts[2],
+          available: parts[3],
+          usePercentage: parts[4]
+        });
+      } else {
+        throw new Error("Unexpected df output");
+      }
+    } catch (e: any) {
+      res.json({ error: e.message });
+    }
+  });
+
+  // --- SETTINGS: DISPLAY ---
+  app.get("/api/system/display", async (req, res) => {
+    try {
+      const { stdout } = await execAsync("xrandr");
+      const lines = stdout.split('\n');
+      let currentRes = "";
+      let currentRate = "";
+      
+      for (const line of lines) {
+        if (line.includes('*')) {
+          const match = line.trim().match(/^(\d+x\d+)\s+([\d.]+)\*/);
+          if (match) {
+            currentRes = match[1];
+            currentRate = match[2];
+          } else {
+            const parts = line.trim().split(/\s+/);
+            currentRes = parts[0];
+            const rateMatch = parts.find(p => p.includes('*'));
+            if (rateMatch) currentRate = rateMatch.replace(/[^0-9.]/g, '');
+          }
+        }
+      }
+      if (!currentRes) throw new Error("Could not parse xrandr output");
+      res.json({ resolution: currentRes, refreshRate: currentRate ? currentRate + " Hz" : "" });
+    } catch (e: any) {
+      res.json({ error: "Display info unavailable (xrandr failed or not found)" });
+    }
+  });
+
+  // --- SETTINGS: BLUETOOTH ---
+  app.get("/api/system/bluetooth", async (req, res) => {
+    try {
+      const { stdout } = await execAsync("bluetoothctl devices");
+      const devices = stdout.trim().split('\n').filter(Boolean).map(line => {
+        const parts = line.split(' ');
+        return { mac: parts[1], name: parts.slice(2).join(' ') };
+      });
+      res.json({ enabled: true, devices });
+    } catch (e: any) {
+      res.json({ enabled: false, devices: [], error: "Bluetooth service unavailable or bluetoothctl failed" });
+    }
+  });
+
+  // --- SETTINGS: POWER ---
+  app.get("/api/system/power", async (req, res) => {
+    try {
+      const powerSupplyDir = "/sys/class/power_supply/";
+      if (!fs.existsSync(powerSupplyDir)) throw new Error("No power supply directory");
+      const supplies = fs.readdirSync(powerSupplyDir);
+      const batDir = supplies.find(dir => dir.startsWith("BAT"));
+      if (!batDir) throw new Error("No battery found");
+
+      const capacity = fs.readFileSync(path.join(powerSupplyDir, batDir, "capacity"), "utf-8").trim();
+      const status = fs.readFileSync(path.join(powerSupplyDir, batDir, "status"), "utf-8").trim();
+      let health = "Unknown";
+      try { health = fs.readFileSync(path.join(powerSupplyDir, batDir, "health"), "utf-8").trim(); } catch(e) {}
+      
+      res.json({ capacity, status, health });
+    } catch (e: any) {
+      res.json({ error: e.message });
+    }
+  });
+
+  // --- SETTINGS: DATETIME ---
+  app.get("/api/system/datetime", async (req, res) => {
+    try {
+      const { stdout } = await execAsync("timedatectl");
+      res.json({ raw: stdout.trim() });
+    } catch (e: any) {
+      const date = new Date().toString();
+      res.json({ raw: `Local time: ${date}\nUniversal time: ${new Date().toUTCString()}`, error: "timedatectl failed" });
+    }
+  });
+
+  // --- SETTINGS: REGION ---
+  app.get("/api/system/region", async (req, res) => {
+    try {
+      const { stdout } = await execAsync("localectl");
+      res.json({ raw: stdout.trim() });
+    } catch (e: any) {
+      res.json({ raw: "System Locale: LANG=en_US.UTF-8\nVC Keymap: us\nX11 Layout: us", error: "localectl failed" });
+    }
+  });
+
+  // --- SETTINGS: DEFAULT APPS ---
+  app.get("/api/system/defaultapps", async (req, res) => {
+    try {
+      const browser = (await execAsync("xdg-settings get default-web-browser")).stdout.trim();
+      let urlScheme = "";
+      try {
+        urlScheme = (await execAsync("xdg-mime query default x-scheme-handler/http")).stdout.trim();
+      } catch (e) {}
+      res.json({ browser, urlScheme });
+    } catch (e: any) {
+      res.json({ error: "xdg-utils not available or failed" });
+    }
+  });
+
+  // --- SETTINGS: STARTUP APPS ---
+  app.get("/api/system/startup", async (req, res) => {
+    try {
+      const autostartDir = path.join(os.homedir(), ".config", "autostart");
+      let apps: string[] = [];
+      if (fs.existsSync(autostartDir)) {
+        const files = fs.readdirSync(autostartDir).filter(f => f.endsWith('.desktop'));
+        apps = files.map(f => f.replace('.desktop', ''));
+      }
+      res.json({ apps });
+    } catch (e: any) {
+      res.json({ error: e.message });
+    }
+  });
+
+  // --- SETTINGS: PERMISSIONS ---
+  app.get("/api/system/permissions", async (req, res) => {
+    try {
+      const { stdout } = await execAsync("flatpak list --app --columns=application");
+      const apps = stdout.trim().split('\n').filter(Boolean);
+      res.json({ apps, note: "Granular permissions apply to Flatpak apps." });
+    } catch (e: any) {
+      res.json({ error: "Flatpak not installed or no flatpak apps found. Native Arch packages have full system access." });
+    }
+  });
+
+  // --- SETTINGS: LOCKSCREEN ---
+  app.get("/api/system/lockscreen", async (req, res) => {
+    res.json({ status: "Managed by display manager (e.g., GDM, SDDM) or swayidle." });
+  });
+
+  // --- SETTINGS: PERSONALIZATION ---
+  const settingsFile = path.join(os.homedir(), ".config", "arcadegamer254_settings.json");
+  let personalization = {
+    theme: 'dark',
+    wallpaper: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop',
+    font: 'Inter',
+    fontSize: 14,
+    dockPosition: 'Bottom',
+    dockAutoHide: false
+  };
+
+  try {
+    if (fs.existsSync(settingsFile)) {
+      personalization = { ...personalization, ...JSON.parse(fs.readFileSync(settingsFile, 'utf-8')) };
+    } else {
+      if (!fs.existsSync(path.dirname(settingsFile))) {
+        fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+      }
+      fs.writeFileSync(settingsFile, JSON.stringify(personalization, null, 2));
+    }
+  } catch (e) {}
+
+  app.get("/api/system/personalization", (req, res) => res.json(personalization));
+  app.post("/api/system/personalization", (req, res) => {
+    personalization = { ...personalization, ...req.body };
+    try {
+      fs.writeFileSync(settingsFile, JSON.stringify(personalization, null, 2));
+    } catch (e) {}
+    res.json({ success: true, settings: personalization });
+  });
+
   app.get("/api/system/user", (req, res) => {
     try {
       const username = require('os').userInfo().username;
@@ -122,6 +395,14 @@ async function startServer() {
       ];
       const apps: any[] = [];
       
+      const builtInApps = [
+        { name: "Terminal", exec: "internal:terminal", icon: "terminal" },
+        { name: "Settings", exec: "internal:settings", icon: "settings" },
+        { name: "App Store", exec: "internal:appstore", icon: "store" },
+        { name: "System Monitor", exec: "internal:monitor", icon: "activity" },
+        { name: "Arcade Browser", exec: "internal:browser", icon: "browser" }
+      ];
+
       for (const dir of dirs) {
         if (!fs.existsSync(dir)) continue;
         const files = fs.readdirSync(dir).filter(f => f.endsWith(".desktop"));
@@ -145,7 +426,7 @@ async function startServer() {
       }
       
       // Deduplicate by name and sort
-      const uniqueApps = Array.from(new Map(apps.map(a => [a.name, a])).values());
+      const uniqueApps = Array.from(new Map([...builtInApps, ...apps].map(a => [a.name, a])).values());
       uniqueApps.sort((a, b) => a.name.localeCompare(b.name));
       
       res.json({ apps: uniqueApps });
@@ -159,6 +440,17 @@ async function startServer() {
       child.unref();
       res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  // --- TERMINAL ---
+  app.post("/api/system/terminal", async (req, res) => {
+    try {
+      const { command } = req.body;
+      const { stdout, stderr } = await execAsync(command);
+      res.json({ output: stdout || stderr });
+    } catch (error: any) { 
+      res.json({ output: error.message }); 
+    }
   });
 
   // --- SYSTEM MONITOR (CPU & RAM) ---
@@ -200,7 +492,17 @@ async function startServer() {
   app.get("/api/system/packages/search", async (req, res) => {
     try {
       const { q } = req.query;
-      if (!q) return res.json({ packages: [] });
+      if (!q) {
+        // Return 1000 suggestions
+        try {
+          const { stdout } = await execAsync(`pacman -Ssq | head -n 1000`);
+          const names = stdout.split('\n').filter(Boolean);
+          const packages = names.map(name => ({ name, version: 'Latest', description: 'Available in repositories', installed: false }));
+          return res.json({ packages });
+        } catch (e) {
+          return res.json({ packages: [] });
+        }
+      }
       const { stdout } = await execAsync(`pacman -Ss ${q}`);
       const lines = stdout.split('\n');
       const packages = [];
@@ -218,6 +520,14 @@ async function startServer() {
     try {
       const { pkg } = req.body;
       const { stdout } = await execAsync(`pkexec pacman -S --noconfirm ${pkg}`);
+      res.json({ success: true, output: stdout });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  app.post("/api/system/packages/uninstall", async (req, res) => {
+    try {
+      const { pkg } = req.body;
+      const { stdout } = await execAsync(`pkexec pacman -Rns --noconfirm ${pkg}`);
       res.json({ success: true, output: stdout });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });

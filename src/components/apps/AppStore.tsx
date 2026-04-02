@@ -1,15 +1,35 @@
-import React, { useState } from 'react';
-import { Search, Download, Check, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Download, Check, ShoppingBag, Trash2 } from 'lucide-react';
 
 export function AppStore() {
   const [query, setQuery] = useState('');
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [installingPkg, setInstallingPkg] = useState<string | null>(null);
+  const [uninstallingPkg, setUninstallingPkg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSuggestions();
+  }, []);
+
+  const fetchSuggestions = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/system/packages/search?q=`);
+      const data = await res.json();
+      setPackages(data.packages || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
 
   const searchPackages = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query) return;
+    if (!query) {
+      fetchSuggestions();
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`/api/system/packages/search?q=${encodeURIComponent(query)}`);
@@ -37,6 +57,24 @@ export function AppStore() {
       console.error(e);
     }
     setInstallingPkg(null);
+  };
+
+  const uninstallPackage = async (pkgName: string) => {
+    setUninstallingPkg(pkgName);
+    try {
+      const res = await fetch('/api/system/packages/uninstall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pkg: pkgName })
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setPackages(prev => prev.map(p => p.name === pkgName ? { ...p, installed: false } : p));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setUninstallingPkg(null);
   };
 
   return (
@@ -80,10 +118,24 @@ export function AppStore() {
                   
                   <div className="mt-auto pt-4 border-t border-gray-800/50">
                     {pkg.installed ? (
-                      <button disabled className="w-full flex justify-center items-center space-x-2 bg-gray-800/50 text-green-400 px-4 py-2 rounded-lg font-medium cursor-default">
-                        <Check className="w-4 h-4" />
-                        <span>Installed</span>
-                      </button>
+                      <div className="flex space-x-2">
+                        <button disabled className="flex-1 flex justify-center items-center space-x-2 bg-gray-800/50 text-green-400 px-4 py-2 rounded-lg font-medium cursor-default">
+                          <Check className="w-4 h-4" />
+                          <span>Installed</span>
+                        </button>
+                        <button 
+                          onClick={() => uninstallPackage(pkg.name)}
+                          disabled={uninstallingPkg !== null}
+                          className="flex justify-center items-center bg-red-600/20 hover:bg-red-600/40 text-red-400 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                          title="Uninstall"
+                        >
+                          {uninstallingPkg === pkg.name ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <button 
                         onClick={() => installPackage(pkg.name)}
