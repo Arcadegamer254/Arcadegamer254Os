@@ -489,7 +489,12 @@ async function startServer() {
   app.post("/api/system/apps/launch", async (req, res) => {
     try {
       const { exec: cmd } = req.body;
-      const child = require('child_process').spawn(cmd, [], { shell: true, detached: true, stdio: 'ignore' });
+      const child = require('child_process').spawn(cmd, [], { 
+        shell: true, 
+        detached: true, 
+        stdio: 'ignore',
+        env: { ...process.env, DISPLAY: process.env.DISPLAY || ':0' }
+      });
       child.unref();
       res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
@@ -546,11 +551,14 @@ async function startServer() {
     try {
       const { q } = req.query;
       if (!q) {
-        // Return 1000 suggestions
+        // Return installed packages if no query
         try {
-          const { stdout } = await execAsync(`pacman -Ssq | head -n 1000`);
-          const names = stdout.split('\n').filter(Boolean);
-          const packages = names.map(name => ({ name, version: 'Latest', description: 'Available in repositories', installed: false }));
+          const { stdout } = await execAsync(`pacman -Q`);
+          const lines = stdout.split('\n').filter(Boolean);
+          const packages = lines.map(line => {
+            const [name, version] = line.split(' ');
+            return { name, version, description: 'Installed package', installed: true };
+          });
           return res.json({ packages });
         } catch (e) {
           return res.json({ packages: [] });
@@ -561,9 +569,10 @@ async function startServer() {
       const packages = [];
       for (let i = 0; i < lines.length; i += 2) {
         if (!lines[i] || !lines[i].includes('/')) continue;
-        const [repoAndName, version, installed] = lines[i].split(' ');
+        const [repoAndName, version, ...rest] = lines[i].split(' ');
+        const installed = rest.join(' ').includes('[installed');
         const description = lines[i+1]?.trim() || '';
-        packages.push({ name: repoAndName, version, description, installed: !!installed });
+        packages.push({ name: repoAndName.split('/')[1] || repoAndName, version, description, installed: !!installed });
       }
       res.json({ packages });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
@@ -593,6 +602,21 @@ async function startServer() {
         return { name, version };
       });
       res.json({ packages });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  // --- BLUETOOTH ---
+  app.get("/api/system/bluetooth", async (req, res) => {
+    try {
+      // Mock bluetooth data since container might not have real bluetooth
+      res.json({
+        enabled: true,
+        devices: [
+          { name: "AirPods Pro", connected: true, battery: 85 },
+          { name: "Logitech MX Master 3", connected: true, battery: 40 },
+          { name: "Keychron K2", connected: false }
+        ]
+      });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
