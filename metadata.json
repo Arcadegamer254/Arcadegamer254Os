@@ -1,0 +1,5 @@
+{
+  "name": "Arch Linux React DE",
+  "description": "A custom Desktop Environment and OS Shell built with React, interfacing with native Linux APIs.",
+  "requestFramePermissions": []
+}
