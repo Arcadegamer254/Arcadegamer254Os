@@ -354,7 +354,13 @@ async function startServer() {
     font: 'Inter',
     fontSize: 14,
     dockPosition: 'Bottom',
-    dockAutoHide: false
+    dockAutoHide: false,
+    desktopApps: [
+      { name: "Terminal", exec: "internal:terminal", icon: "terminal", category: "System" },
+      { name: "App Store", exec: "internal:appstore", icon: "store", category: "System" },
+      { name: "Arcade Browser", exec: "internal:browser", icon: "browser", category: "Internet" }
+    ],
+    systemSound: true
   };
 
   try {
@@ -396,11 +402,43 @@ async function startServer() {
       const apps: any[] = [];
       
       const builtInApps = [
-        { name: "Terminal", exec: "internal:terminal", icon: "terminal" },
-        { name: "Settings", exec: "internal:settings", icon: "settings" },
-        { name: "App Store", exec: "internal:appstore", icon: "store" },
-        { name: "System Monitor", exec: "internal:monitor", icon: "activity" },
-        { name: "Arcade Browser", exec: "internal:browser", icon: "browser" }
+        { name: "Terminal", exec: "internal:terminal", icon: "terminal", category: "System" },
+        { name: "Settings", exec: "internal:settings", icon: "settings", category: "System" },
+        { name: "App Store", exec: "internal:appstore", icon: "store", category: "System" },
+        { name: "System Monitor", exec: "internal:monitor", icon: "activity", category: "System" },
+        { name: "Arcade Browser", exec: "internal:browser", icon: "browser", category: "Internet" },
+        // Games
+        { name: "Minecraft", exec: "minecraft-launcher", icon: "game", category: "Games" },
+        { name: "Steam", exec: "steam", icon: "game", category: "Games" },
+        { name: "Lutris", exec: "lutris", icon: "game", category: "Games" },
+        { name: "RetroArch", exec: "retroarch", icon: "game", category: "Games" },
+        { name: "CS:GO", exec: "steam -applaunch 730", icon: "game", category: "Games" },
+        { name: "Dota 2", exec: "steam -applaunch 570", icon: "game", category: "Games" },
+        { name: "SuperTuxKart", exec: "supertuxkart", icon: "game", category: "Games" },
+        { name: "0 A.D.", exec: "0ad", icon: "game", category: "Games" },
+        { name: "Xonotic", exec: "xonotic", icon: "game", category: "Games" },
+        { name: "Minetest", exec: "minetest", icon: "game", category: "Games" },
+        // Apps
+        { name: "Firefox", exec: "firefox", icon: "browser", category: "Internet" },
+        { name: "Google Chrome", exec: "google-chrome-stable", icon: "browser", category: "Internet" },
+        { name: "VLC Media Player", exec: "vlc", icon: "video", category: "Media" },
+        { name: "OBS Studio", exec: "obs", icon: "video", category: "Media" },
+        { name: "Discord", exec: "discord", icon: "chat", category: "Internet" },
+        { name: "GIMP", exec: "gimp", icon: "image", category: "Graphics" },
+        { name: "Krita", exec: "krita", icon: "image", category: "Graphics" },
+        { name: "Blender", exec: "blender", icon: "image", category: "Graphics" },
+        { name: "VS Code", exec: "code", icon: "code", category: "Development" },
+        { name: "LibreOffice", exec: "libreoffice", icon: "office", category: "Office" },
+        { name: "Spotify", exec: "spotify", icon: "music", category: "Media" },
+        { name: "Thunderbird", exec: "thunderbird", icon: "mail", category: "Internet" },
+        { name: "Transmission", exec: "transmission-gtk", icon: "download", category: "Internet" },
+        { name: "FileZilla", exec: "filezilla", icon: "download", category: "Internet" },
+        { name: "Audacity", exec: "audacity", icon: "music", category: "Media" },
+        { name: "Kdenlive", exec: "kdenlive", icon: "video", category: "Media" },
+        { name: "Inkscape", exec: "inkscape", icon: "image", category: "Graphics" },
+        { name: "HandBrake", exec: "ghb", icon: "video", category: "Media" },
+        { name: "VirtualBox", exec: "virtualbox", icon: "system", category: "System" },
+        { name: "Docker", exec: "docker-desktop", icon: "system", category: "Development" }
       ];
 
       for (const dir of dirs) {
@@ -413,12 +451,27 @@ async function startServer() {
             const nameMatch = content.match(/^Name=(.+)$/m);
             const execMatch = content.match(/^Exec=(.+)$/m);
             const iconMatch = content.match(/^Icon=(.+)$/m);
+            const categoryMatch = content.match(/^Categories=(.+)$/m);
             
+            let category = "Other";
+            if (categoryMatch) {
+              const cats = categoryMatch[1].split(';');
+              if (cats.includes('Game')) category = "Games";
+              else if (cats.includes('Network') || cats.includes('WebBrowser')) category = "Internet";
+              else if (cats.includes('AudioVideo')) category = "Media";
+              else if (cats.includes('Graphics')) category = "Graphics";
+              else if (cats.includes('Development')) category = "Development";
+              else if (cats.includes('Office')) category = "Office";
+              else if (cats.includes('System') || cats.includes('Settings')) category = "System";
+              else if (cats.includes('Utility')) category = "Utilities";
+            }
+
             if (nameMatch && execMatch) {
               apps.push({
                 name: nameMatch[1].trim(),
                 exec: execMatch[1].trim().replace(/%[a-zA-Z]/g, "").trim(),
-                icon: iconMatch ? iconMatch[1].trim() : ""
+                icon: iconMatch ? iconMatch[1].trim() : "",
+                category
               });
             }
           } catch (e) { /* ignore unreadable files */ }

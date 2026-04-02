@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, User, UserPlus, AlertCircle } from 'lucide-react';
+import { playSound } from '../utils/sounds';
 
 export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
   const [mode, setMode] = useState<'loading' | 'setup' | 'login'>('loading');
@@ -39,6 +40,11 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
 
     initializeSystem();
   }, []);
+
+  const handleComplete = () => {
+    playSound('startup');
+    onComplete();
+  };
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +88,7 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
       });
       
       if (res.ok) {
-        onComplete();
+        handleComplete();
       } else {
         setError('Incorrect password');
         setPassword('');

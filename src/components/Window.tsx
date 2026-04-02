@@ -27,7 +27,7 @@ export function Window({ window, children }: { window: WindowState, children: Re
       }}
       onPointerDown={() => focusWindow(window.id)}
       style={{ zIndex: window.zIndex }}
-      className="absolute bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden flex flex-col"
+      className="absolute bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
     >
       <div className="window-handle h-10 bg-gray-800 flex items-center justify-between px-4 cursor-grab active:cursor-grabbing select-none border-b border-gray-700">
         <span className="text-sm font-semibold text-gray-200">{window.title}</span>
