@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SystemTray } from './components/SystemTray';
 import { WindowManagerProvider, useWindowManager } from './contexts/WindowManagerContext';
 import { Window } from './components/Window';
@@ -11,6 +11,8 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { getAppIcon } from './utils/icons';
 import { X } from 'lucide-react';
 import { playSound } from './utils/sounds';
+
+import { getEmbedUrl } from './utils/url';
 
 function Desktop() {
   const { windows, openWindow } = useWindowManager();
@@ -27,7 +29,7 @@ function Desktop() {
         const res = await fetch('/api/system/personalization');
         const data = await res.json();
         setPers(data);
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchPers();
     const interval = setInterval(fetchPers, 2000); // Poll for changes
@@ -44,7 +46,12 @@ function Desktop() {
     
     if (app.exec.startsWith('web:')) {
       const url = app.exec.split('web:')[1];
-      openWindow(`webapp-${app.name}`, app.name, 'webapp', url);
+      const embedUrl = getEmbedUrl(url);
+      const isEmbed = embedUrl !== url;
+      
+      // Use proxy for web apps to bypass X-Frame-Options, unless it's a native embed URL
+      const finalUrl = isEmbed ? embedUrl : `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
+      openWindow(`webapp-${app.name}`, app.name, 'webapp', finalUrl);
       return;
     }
     

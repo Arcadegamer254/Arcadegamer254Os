@@ -727,10 +727,15 @@ export function Settings() {
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Dock Position</label>
-                <select className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none appearance-none">
-                  <option>Bottom</option>
-                  <option>Left</option>
-                  <option>Right</option>
+                <select 
+                  value={persData?.dockPosition || 'Bottom'}
+                  onChange={(e) => updatePers({ dockPosition: e.target.value })}
+                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none appearance-none"
+                >
+                  <option value="Bottom">Bottom</option>
+                  <option value="Top">Top</option>
+                  <option value="Left">Left</option>
+                  <option value="Right">Right</option>
                 </select>
               </div>
               <div className="flex items-center justify-between">

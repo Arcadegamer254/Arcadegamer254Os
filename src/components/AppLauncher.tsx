@@ -4,6 +4,7 @@ import { Search, Box, Power, Plus } from 'lucide-react';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 import { getAppIcon } from '../utils/icons';
 import { playSound } from '../utils/sounds';
+import { getEmbedUrl } from '../utils/url';
 
 export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [apps, setApps] = useState<any[]>([]);
@@ -43,7 +44,10 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     
     if (app.exec.startsWith('web:')) {
       const url = app.exec.split('web:')[1];
-      openWindow(`webapp-${app.name}`, app.name, 'webapp', url);
+      const embedUrl = getEmbedUrl(url);
+      const isEmbed = embedUrl !== url;
+      const finalUrl = isEmbed ? embedUrl : `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
+      openWindow(`webapp-${app.name}`, app.name, 'webapp', finalUrl);
       onClose();
       return;
     }

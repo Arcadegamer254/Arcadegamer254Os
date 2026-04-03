@@ -5,6 +5,7 @@ import fs from "fs";
 import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 const execAsync = promisify(exec);
 
@@ -13,6 +14,29 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  // Proxy for iframe-blocking sites
+  app.use('/api/proxy', createProxyMiddleware({
+    router: (req: any) => {
+      return req.query.url as string;
+    },
+    changeOrigin: true,
+    pathRewrite: (path, req: any) => {
+      try {
+        const urlObj = new URL(req.query.url as string);
+        return urlObj.pathname + urlObj.search;
+      } catch (e) {
+        return path;
+      }
+    },
+    on: {
+      proxyRes: (proxyRes, req, res) => {
+        delete proxyRes.headers['x-frame-options'];
+        delete proxyRes.headers['content-security-policy'];
+        proxyRes.headers['access-control-allow-origin'] = '*';
+      }
+    }
+  }));
 
   // --- BATTERY ---
   app.get("/api/system/battery", async (req, res) => {

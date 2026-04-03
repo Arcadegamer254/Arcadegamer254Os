@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useWindowManager, WindowState } from '../contexts/WindowManagerContext';
 import { X, Square } from 'lucide-react';
 
-export function Window({ window, children }: { window: WindowState, children: React.ReactNode }) {
+export function Window({ window, children }: { window: WindowState, children: React.ReactNode, key?: React.Key }) {
   const { closeWindow, focusWindow, updateWindow } = useWindowManager();
 
   return (
