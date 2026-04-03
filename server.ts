@@ -563,61 +563,97 @@ async function startServer() {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
-  // --- PACKAGE MANAGER (Pacman) ---
+  // --- PACKAGE MANAGER (Mock App Store) ---
+  const mockPackages = [
+    { name: "excalidraw", version: "1.0.0", description: "Virtual whiteboard for sketching hand-drawn like diagrams", installed: false, category: "Graphics", exec: "web:https://excalidraw.com", icon: "image" },
+    { name: "vscode", version: "1.80.0", description: "Code editing. Redefined.", installed: false, category: "Development", exec: "web:https://vscode.dev", icon: "code" },
+    { name: "discord", version: "1.0.0", description: "Chat for Communities and Friends", installed: false, category: "Internet", exec: "web:https://discord.com/app", icon: "chat" },
+    { name: "spotify", version: "1.0.0", description: "Web Player: Music for everyone", installed: false, category: "Media", exec: "web:https://open.spotify.com", icon: "music" },
+    { name: "photopea", version: "1.0.0", description: "Advanced Photo Editor", installed: false, category: "Graphics", exec: "web:https://www.photopea.com/", icon: "image" },
+    { name: "youtube", version: "1.0.0", description: "Enjoy the videos and music you love", installed: false, category: "Media", exec: "web:https://www.youtube.com", icon: "video" },
+    { name: "twitch", version: "1.0.0", description: "Twitch is the world's leading video platform and community for gamers.", installed: false, category: "Media", exec: "web:https://www.twitch.tv", icon: "video" },
+    { name: "github", version: "1.0.0", description: "Where the world builds software", installed: false, category: "Development", exec: "web:https://github.com", icon: "code" },
+    { name: "google-docs", version: "1.0.0", description: "Create and edit documents online", installed: false, category: "Office", exec: "web:https://docs.google.com", icon: "office" },
+    { name: "minecraft-classic", version: "1.0.0", description: "Play Minecraft Classic in your browser", installed: false, category: "Games", exec: "web:https://classic.minecraft.net/", icon: "game" },
+    { name: "js-dos", version: "1.0.0", description: "DOSBox in the browser", installed: false, category: "Games", exec: "web:https://js-dos.com/games/", icon: "game" },
+    { name: "tetris", version: "1.0.0", description: "Play Tetris", installed: false, category: "Games", exec: "web:https://tetris.com/play-tetris", icon: "game" },
+    { name: "chess", version: "1.0.0", description: "Play Chess against the computer", installed: false, category: "Games", exec: "web:https://www.chess.com/play/computer", icon: "game" },
+    { name: "2048", version: "1.0.0", description: "Join the numbers and get to the 2048 tile!", installed: false, category: "Games", exec: "web:https://play2048.co/", icon: "game" },
+  ];
+
   app.get("/api/system/packages/search", async (req, res) => {
     try {
       const { q } = req.query;
-      if (!q) {
-        // Return installed packages if no query
-        try {
-          const { stdout } = await execAsync(`pacman -Q`);
-          const lines = stdout.split('\n').filter(Boolean);
-          const packages = lines.map(line => {
-            const [name, version] = line.split(' ');
-            return { name, version, description: 'Installed package', installed: true };
-          });
-          return res.json({ packages });
-        } catch (e) {
-          return res.json({ packages: [] });
-        }
+      const installedAppsDir = path.join(process.env.HOME || "/root", ".local/share/applications");
+      let installedApps: string[] = [];
+      if (fs.existsSync(installedAppsDir)) {
+        installedApps = fs.readdirSync(installedAppsDir).map(f => f.replace('.desktop', ''));
       }
-      const { stdout } = await execAsync(`pacman -Ss ${q}`);
-      const lines = stdout.split('\n');
-      const packages = [];
-      for (let i = 0; i < lines.length; i += 2) {
-        if (!lines[i] || !lines[i].includes('/')) continue;
-        const [repoAndName, version, ...rest] = lines[i].split(' ');
-        const installed = rest.join(' ').includes('[installed');
-        const description = lines[i+1]?.trim() || '';
-        packages.push({ name: repoAndName.split('/')[1] || repoAndName, version, description, installed: !!installed });
+
+      let results = mockPackages.map(pkg => ({
+        ...pkg,
+        installed: installedApps.includes(pkg.name)
+      }));
+
+      if (q) {
+        const query = (q as string).toLowerCase();
+        results = results.filter(pkg => 
+          pkg.name.toLowerCase().includes(query) || 
+          pkg.description.toLowerCase().includes(query)
+        );
       }
-      res.json({ packages });
+      
+      res.json({ packages: results });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
   app.post("/api/system/packages/install", async (req, res) => {
     try {
       const { pkg } = req.body;
-      const { stdout } = await execAsync(`pkexec pacman -S --noconfirm ${pkg}`);
-      res.json({ success: true, output: stdout });
+      const packageInfo = mockPackages.find(p => p.name === pkg);
+      
+      if (!packageInfo) {
+        return res.status(404).json({ error: "Package not found" });
+      }
+
+      const desktopFileContent = `[Desktop Entry]
+Name=${packageInfo.name.charAt(0).toUpperCase() + packageInfo.name.slice(1)}
+Exec=${packageInfo.exec}
+Icon=${packageInfo.icon}
+Type=Application
+Categories=${packageInfo.category};`;
+
+      const appsDir = path.join(process.env.HOME || "/root", ".local/share/applications");
+      if (!fs.existsSync(appsDir)) {
+        fs.mkdirSync(appsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(path.join(appsDir, `${pkg}.desktop`), desktopFileContent);
+      res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
   app.post("/api/system/packages/uninstall", async (req, res) => {
     try {
       const { pkg } = req.body;
-      const { stdout } = await execAsync(`pkexec pacman -Rns --noconfirm ${pkg}`);
-      res.json({ success: true, output: stdout });
+      const desktopFile = path.join(process.env.HOME || "/root", ".local/share/applications", `${pkg}.desktop`);
+      
+      if (fs.existsSync(desktopFile)) {
+        fs.unlinkSync(desktopFile);
+      }
+      res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
   app.get("/api/system/packages/installed", async (req, res) => {
     try {
-      const { stdout } = await execAsync(`pacman -Q`);
-      const packages = stdout.split('\n').filter(l => l.trim()).map(line => {
-        const [name, version] = line.split(' ');
-        return { name, version };
-      });
+      const appsDir = path.join(process.env.HOME || "/root", ".local/share/applications");
+      let packages: any[] = [];
+      
+      if (fs.existsSync(appsDir)) {
+        const files = fs.readdirSync(appsDir).filter(f => f.endsWith('.desktop'));
+        packages = files.map(f => ({ name: f.replace('.desktop', ''), version: '1.0.0' }));
+      }
       res.json({ packages });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });

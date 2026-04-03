@@ -47,11 +47,7 @@ function Desktop() {
     if (app.exec.startsWith('web:')) {
       const url = app.exec.split('web:')[1];
       const embedUrl = getEmbedUrl(url);
-      const isEmbed = embedUrl !== url;
-      
-      // Use proxy for web apps to bypass X-Frame-Options, unless it's a native embed URL
-      const finalUrl = isEmbed ? embedUrl : `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
-      openWindow(`webapp-${app.name}`, app.name, 'webapp', finalUrl);
+      openWindow(`webapp-${app.name}`, app.name, 'webapp', embedUrl);
       return;
     }
     
@@ -83,7 +79,15 @@ function Desktop() {
 
   const renderComponent = (win: any) => {
     if (win.component === 'webapp') {
-      return <iframe src={win.url} className="w-full h-full border-none bg-white" title={win.title} />;
+      return (
+        <iframe 
+          src={win.url} 
+          className="w-full h-full border-none bg-white" 
+          title={win.title}
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads allow-pointer-lock allow-presentation"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; microphone; camera; midi; vr; xr-spatial-tracking"
+        />
+      );
     }
     switch (win.component) {
       case 'settings': return <Settings />;

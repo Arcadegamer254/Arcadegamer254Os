@@ -91,7 +91,7 @@ export function AppStore() {
             type="text" 
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search Arch Repositories (pacman -Ss)..."
+            placeholder="Search App Store..."
             className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:border-blue-500 transition-colors shadow-sm"
           />
         </form>

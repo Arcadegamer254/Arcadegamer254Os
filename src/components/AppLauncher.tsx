@@ -16,7 +16,7 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const categories = ['All', 'System', 'Games', 'Internet', 'Media', 'Graphics', 'Development', 'Office', 'Utilities', 'Other'];
 
   useEffect(() => {
-    if (isOpen && apps.length === 0) {
+    if (isOpen) {
       fetchApps();
     }
   }, [isOpen]);
@@ -45,9 +45,7 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     if (app.exec.startsWith('web:')) {
       const url = app.exec.split('web:')[1];
       const embedUrl = getEmbedUrl(url);
-      const isEmbed = embedUrl !== url;
-      const finalUrl = isEmbed ? embedUrl : `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
-      openWindow(`webapp-${app.name}`, app.name, 'webapp', finalUrl);
+      openWindow(`webapp-${app.name}`, app.name, 'webapp', embedUrl);
       onClose();
       return;
     }

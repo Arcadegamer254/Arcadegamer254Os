@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Globe, Search, ArrowLeft, ArrowRight, RotateCw, Home, AlertTriangle } from 'lucide-react';
+import { Globe, Search, ArrowLeft, ArrowRight, RotateCw, Home, AlertTriangle, Shield, ShieldOff } from 'lucide-react';
 import { getEmbedUrl } from '../../utils/url';
 
 export function ArcadeBrowser() {
-  const [url, setUrl] = useState('https://www.wikipedia.org');
-  const [inputUrl, setInputUrl] = useState('https://www.wikipedia.org');
+  const [url, setUrl] = useState('https://www.google.com/webhp?igu=1');
+  const [inputUrl, setInputUrl] = useState('https://www.google.com');
   const [loading, setLoading] = useState(false);
   const [iframeError, setIframeError] = useState(false);
+  const [useProxy, setUseProxy] = useState(false);
 
-  const handleNavigate = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean) => {
+    if (e) e.preventDefault();
     let finalUrl = inputUrl;
     if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
       finalUrl = 'https://' + finalUrl;
@@ -18,12 +19,18 @@ export function ArcadeBrowser() {
     const embedUrl = getEmbedUrl(finalUrl);
     const isEmbed = embedUrl !== finalUrl;
     
-    // Use our proxy to bypass X-Frame-Options for external sites, unless it's a native embed
-    const proxiedUrl = isEmbed ? embedUrl : `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
+    const shouldProxy = forceProxy !== undefined ? forceProxy : useProxy;
+    const proxiedUrl = (shouldProxy && !isEmbed) ? `/api/proxy?url=${encodeURIComponent(embedUrl)}` : embedUrl;
     
     setUrl(proxiedUrl);
     setInputUrl(finalUrl);
     setIframeError(false);
+  };
+
+  const toggleProxy = () => {
+    const newProxyState = !useProxy;
+    setUseProxy(newProxyState);
+    handleNavigate(undefined, newProxyState);
   };
 
   return (
@@ -50,8 +57,8 @@ export function ArcadeBrowser() {
           <button 
             className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
             onClick={() => {
-              setUrl('https://www.wikipedia.org');
-              setInputUrl('https://www.wikipedia.org');
+              setUrl('https://www.google.com/webhp?igu=1');
+              setInputUrl('https://www.google.com');
               setIframeError(false);
             }}
           >
@@ -69,6 +76,14 @@ export function ArcadeBrowser() {
             placeholder="Search or enter web address"
           />
         </form>
+        
+        <button
+          onClick={toggleProxy}
+          className={`p-2 rounded-full transition-colors ml-2 ${useProxy ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+          title={useProxy ? "Proxy Enabled (Bypasses X-Frame-Options but may break complex sites)" : "Proxy Disabled (Complex sites work, but some may refuse to connect)"}
+        >
+          {useProxy ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+        </button>
       </div>
 
       {/* Browser Content */}
@@ -92,7 +107,8 @@ export function ArcadeBrowser() {
               src={url} 
               className="w-full h-full border-none"
               title="Arcade Browser"
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads allow-pointer-lock allow-presentation"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; microphone; camera; midi; vr; xr-spatial-tracking"
               onLoad={() => setLoading(false)}
               onError={() => setIframeError(true)}
             />
