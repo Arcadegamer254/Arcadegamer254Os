@@ -41,17 +41,17 @@ export function AppStore() {
     setLoading(false);
   };
 
-  const installPackage = async (pkgName: string) => {
-    setInstallingPkg(pkgName);
+  const installPackage = async (pkg: any) => {
+    setInstallingPkg(pkg.name);
     try {
       const res = await fetch('/api/system/packages/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pkg: pkgName })
+        body: JSON.stringify({ pkg: pkg.name, isWebApp: pkg.isWebApp })
       });
       const data = await res.json();
       if (!data.error) {
-        setPackages(prev => prev.map(p => p.name === pkgName ? { ...p, installed: true } : p));
+        setPackages(prev => prev.map(p => p.name === pkg.name ? { ...p, installed: true } : p));
       }
     } catch (e) {
       console.error(e);
@@ -59,17 +59,17 @@ export function AppStore() {
     setInstallingPkg(null);
   };
 
-  const uninstallPackage = async (pkgName: string) => {
-    setUninstallingPkg(pkgName);
+  const uninstallPackage = async (pkg: any) => {
+    setUninstallingPkg(pkg.name);
     try {
       const res = await fetch('/api/system/packages/uninstall', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pkg: pkgName })
+        body: JSON.stringify({ pkg: pkg.name, isWebApp: pkg.isWebApp })
       });
       const data = await res.json();
       if (!data.error) {
-        setPackages(prev => prev.map(p => p.name === pkgName ? { ...p, installed: false } : p));
+        setPackages(prev => prev.map(p => p.name === pkg.name ? { ...p, installed: false } : p));
       }
     } catch (e) {
       console.error(e);
@@ -124,7 +124,7 @@ export function AppStore() {
                           <span>Installed</span>
                         </button>
                         <button 
-                          onClick={() => uninstallPackage(pkg.name)}
+                          onClick={() => uninstallPackage(pkg)}
                           disabled={uninstallingPkg !== null}
                           className="flex justify-center items-center bg-red-600/20 hover:bg-red-600/40 text-red-400 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                           title="Uninstall"
@@ -138,7 +138,7 @@ export function AppStore() {
                       </div>
                     ) : (
                       <button 
-                        onClick={() => installPackage(pkg.name)}
+                        onClick={() => installPackage(pkg)}
                         disabled={installingPkg !== null}
                         className="w-full flex justify-center items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                       >

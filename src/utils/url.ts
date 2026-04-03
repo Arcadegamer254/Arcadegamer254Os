@@ -4,9 +4,16 @@ export function getEmbedUrl(url: string): string {
     const hostname = urlObj.hostname.replace('www.', '');
 
     // YouTube
-    if (hostname === 'youtube.com' && urlObj.pathname === '/watch') {
-      const videoId = urlObj.searchParams.get('v');
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+      if (urlObj.pathname === '/watch') {
+        const videoId = urlObj.searchParams.get('v');
+        if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      } else if (urlObj.pathname === '/') {
+        // YouTube homepage blocks iframes, use Piped as an alternative frontend
+        return 'https://piped.video/';
+      } else if (urlObj.pathname.startsWith('/results')) {
+        return `https://piped.video${urlObj.pathname}${urlObj.search}`;
+      }
     }
     if (hostname === 'youtu.be') {
       const videoId = urlObj.pathname.slice(1);

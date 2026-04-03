@@ -11,8 +11,12 @@ export function ArcadeBrowser() {
 
   const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean) => {
     if (e) e.preventDefault();
-    let finalUrl = inputUrl;
-    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+    let finalUrl = inputUrl.trim();
+    
+    // Check if it's a search query (no dot, or contains spaces)
+    if (!finalUrl.includes('.') || finalUrl.includes(' ')) {
+      finalUrl = `https://www.google.com/search?q=${encodeURIComponent(finalUrl)}&igu=1`;
+    } else if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
       finalUrl = 'https://' + finalUrl;
     }
     

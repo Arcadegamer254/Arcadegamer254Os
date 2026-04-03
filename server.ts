@@ -563,22 +563,22 @@ async function startServer() {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
-  // --- PACKAGE MANAGER (Mock App Store) ---
-  const mockPackages = [
-    { name: "excalidraw", version: "1.0.0", description: "Virtual whiteboard for sketching hand-drawn like diagrams", installed: false, category: "Graphics", exec: "web:https://excalidraw.com", icon: "image" },
-    { name: "vscode", version: "1.80.0", description: "Code editing. Redefined.", installed: false, category: "Development", exec: "web:https://vscode.dev", icon: "code" },
-    { name: "discord", version: "1.0.0", description: "Chat for Communities and Friends", installed: false, category: "Internet", exec: "web:https://discord.com/app", icon: "chat" },
-    { name: "spotify", version: "1.0.0", description: "Web Player: Music for everyone", installed: false, category: "Media", exec: "web:https://open.spotify.com", icon: "music" },
-    { name: "photopea", version: "1.0.0", description: "Advanced Photo Editor", installed: false, category: "Graphics", exec: "web:https://www.photopea.com/", icon: "image" },
-    { name: "youtube", version: "1.0.0", description: "Enjoy the videos and music you love", installed: false, category: "Media", exec: "web:https://www.youtube.com", icon: "video" },
-    { name: "twitch", version: "1.0.0", description: "Twitch is the world's leading video platform and community for gamers.", installed: false, category: "Media", exec: "web:https://www.twitch.tv", icon: "video" },
-    { name: "github", version: "1.0.0", description: "Where the world builds software", installed: false, category: "Development", exec: "web:https://github.com", icon: "code" },
-    { name: "google-docs", version: "1.0.0", description: "Create and edit documents online", installed: false, category: "Office", exec: "web:https://docs.google.com", icon: "office" },
-    { name: "minecraft-classic", version: "1.0.0", description: "Play Minecraft Classic in your browser", installed: false, category: "Games", exec: "web:https://classic.minecraft.net/", icon: "game" },
-    { name: "js-dos", version: "1.0.0", description: "DOSBox in the browser", installed: false, category: "Games", exec: "web:https://js-dos.com/games/", icon: "game" },
-    { name: "tetris", version: "1.0.0", description: "Play Tetris", installed: false, category: "Games", exec: "web:https://tetris.com/play-tetris", icon: "game" },
-    { name: "chess", version: "1.0.0", description: "Play Chess against the computer", installed: false, category: "Games", exec: "web:https://www.chess.com/play/computer", icon: "game" },
-    { name: "2048", version: "1.0.0", description: "Join the numbers and get to the 2048 tile!", installed: false, category: "Games", exec: "web:https://play2048.co/", icon: "game" },
+  // --- PACKAGE MANAGER (Hybrid: Web Apps + System Packages) ---
+  const webApps = [
+    { name: "excalidraw", version: "1.0.0", description: "Virtual whiteboard for sketching hand-drawn like diagrams", installed: false, category: "Graphics", exec: "web:https://excalidraw.com", icon: "image", isWebApp: true },
+    { name: "vscode", version: "1.80.0", description: "Code editing. Redefined.", installed: false, category: "Development", exec: "web:https://vscode.dev", icon: "code", isWebApp: true },
+    { name: "discord", version: "1.0.0", description: "Chat for Communities and Friends", installed: false, category: "Internet", exec: "web:https://discord.com/app", icon: "chat", isWebApp: true },
+    { name: "spotify", version: "1.0.0", description: "Web Player: Music for everyone", installed: false, category: "Media", exec: "web:https://open.spotify.com", icon: "music", isWebApp: true },
+    { name: "photopea", version: "1.0.0", description: "Advanced Photo Editor", installed: false, category: "Graphics", exec: "web:https://www.photopea.com/", icon: "image", isWebApp: true },
+    { name: "youtube", version: "1.0.0", description: "Enjoy the videos and music you love", installed: false, category: "Media", exec: "web:https://piped.video", icon: "video", isWebApp: true },
+    { name: "twitch", version: "1.0.0", description: "Twitch is the world's leading video platform and community for gamers.", installed: false, category: "Media", exec: "web:https://www.twitch.tv", icon: "video", isWebApp: true },
+    { name: "github", version: "1.0.0", description: "Where the world builds software", installed: false, category: "Development", exec: "web:https://github.com", icon: "code", isWebApp: true },
+    { name: "google-docs", version: "1.0.0", description: "Create and edit documents online", installed: false, category: "Office", exec: "web:https://docs.google.com", icon: "office", isWebApp: true },
+    { name: "minecraft-classic", version: "1.0.0", description: "Play Minecraft Classic in your browser", installed: false, category: "Games", exec: "web:https://classic.minecraft.net/", icon: "game", isWebApp: true },
+    { name: "js-dos", version: "1.0.0", description: "DOSBox in the browser", installed: false, category: "Games", exec: "web:https://js-dos.com/games/", icon: "game", isWebApp: true },
+    { name: "tetris", version: "1.0.0", description: "Play Tetris", installed: false, category: "Games", exec: "web:https://tetris.com/play-tetris", icon: "game", isWebApp: true },
+    { name: "chess", version: "1.0.0", description: "Play Chess against the computer", installed: false, category: "Games", exec: "web:https://www.chess.com/play/computer", icon: "game", isWebApp: true },
+    { name: "2048", version: "1.0.0", description: "Join the numbers and get to the 2048 tile!", installed: false, category: "Games", exec: "web:https://play2048.co/", icon: "game", isWebApp: true },
   ];
 
   app.get("/api/system/packages/search", async (req, res) => {
@@ -590,7 +590,7 @@ async function startServer() {
         installedApps = fs.readdirSync(installedAppsDir).map(f => f.replace('.desktop', ''));
       }
 
-      let results = mockPackages.map(pkg => ({
+      let results = webApps.map(pkg => ({
         ...pkg,
         installed: installedApps.includes(pkg.name)
       }));
@@ -601,6 +601,54 @@ async function startServer() {
           pkg.name.toLowerCase().includes(query) || 
           pkg.description.toLowerCase().includes(query)
         );
+        
+        // Try to search system packages (pacman or apt)
+        try {
+          try {
+            const { stdout } = await execAsync(`pacman -Ss ${query}`);
+            const lines = stdout.split('\\n');
+            for (let i = 0; i < lines.length; i += 2) {
+              if (!lines[i] || !lines[i].includes('/')) continue;
+              const [repoAndName, version, ...rest] = lines[i].split(' ');
+              const installed = rest.join(' ').includes('[installed');
+              const description = lines[i+1]?.trim() || '';
+              results.push({ name: repoAndName.split('/')[1] || repoAndName, version, description, installed: !!installed, isWebApp: false, category: 'System', exec: '', icon: 'box' });
+            }
+          } catch (pacmanErr) {
+            // Fallback to apt
+            const { stdout } = await execAsync(`apt-cache search ${query} | head -n 20`);
+            const lines = stdout.split('\\n').filter(Boolean);
+            for (const line of lines) {
+              const parts = line.split(' - ');
+              if (parts.length >= 2) {
+                const name = parts[0].trim();
+                const description = parts.slice(1).join(' - ').trim();
+                results.push({ name, version: 'latest', description, installed: false, isWebApp: false, category: 'System', exec: '', icon: 'box' });
+              }
+            }
+          }
+        } catch (sysErr) {
+          // Ignore system package manager errors
+        }
+      } else {
+        // If no query, also return installed system packages if possible
+        try {
+          try {
+            const { stdout } = await execAsync(`pacman -Q`);
+            const lines = stdout.split('\\n').filter(Boolean).slice(0, 50); // Limit to 50
+            for (const line of lines) {
+              const [name, version] = line.split(' ');
+              results.push({ name, version, description: 'Installed system package', installed: true, isWebApp: false, category: 'System', exec: '', icon: 'box' });
+            }
+          } catch (pacmanErr) {
+            const { stdout } = await execAsync(`dpkg-query -W -f='\${binary:Package} \${Version}\\n' | head -n 50`);
+            const lines = stdout.split('\\n').filter(Boolean);
+            for (const line of lines) {
+              const [name, version] = line.split(' ');
+              results.push({ name, version, description: 'Installed system package', installed: true, isWebApp: false, category: 'System', exec: '', icon: 'box' });
+            }
+          }
+        } catch (sysErr) {}
       }
       
       res.json({ packages: results });
@@ -609,39 +657,50 @@ async function startServer() {
 
   app.post("/api/system/packages/install", async (req, res) => {
     try {
-      const { pkg } = req.body;
-      const packageInfo = mockPackages.find(p => p.name === pkg);
+      const { pkg, isWebApp } = req.body;
       
-      if (!packageInfo) {
-        return res.status(404).json({ error: "Package not found" });
-      }
-
-      const desktopFileContent = `[Desktop Entry]
-Name=${packageInfo.name.charAt(0).toUpperCase() + packageInfo.name.slice(1)}
-Exec=${packageInfo.exec}
-Icon=${packageInfo.icon}
-Type=Application
-Categories=${packageInfo.category};`;
-
-      const appsDir = path.join(process.env.HOME || "/root", ".local/share/applications");
-      if (!fs.existsSync(appsDir)) {
-        fs.mkdirSync(appsDir, { recursive: true });
+      if (isWebApp !== false) {
+        const packageInfo = webApps.find(p => p.name === pkg);
+        if (packageInfo) {
+          const desktopFileContent = `[Desktop Entry]\nName=${packageInfo.name.charAt(0).toUpperCase() + packageInfo.name.slice(1)}\nExec=${packageInfo.exec}\nIcon=${packageInfo.icon}\nType=Application\nCategories=${packageInfo.category};`;
+          const appsDir = path.join(process.env.HOME || "/root", ".local/share/applications");
+          if (!fs.existsSync(appsDir)) fs.mkdirSync(appsDir, { recursive: true });
+          fs.writeFileSync(path.join(appsDir, `${pkg}.desktop`), desktopFileContent);
+          return res.json({ success: true });
+        }
       }
       
-      fs.writeFileSync(path.join(appsDir, `${pkg}.desktop`), desktopFileContent);
-      res.json({ success: true });
+      // System package install
+      try {
+        await execAsync(`pacman -S --noconfirm ${pkg}`);
+        res.json({ success: true });
+      } catch (pacmanErr) {
+        await execAsync(`DEBIAN_FRONTEND=noninteractive apt-get install -y ${pkg}`);
+        res.json({ success: true });
+      }
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
   app.post("/api/system/packages/uninstall", async (req, res) => {
     try {
-      const { pkg } = req.body;
-      const desktopFile = path.join(process.env.HOME || "/root", ".local/share/applications", `${pkg}.desktop`);
+      const { pkg, isWebApp } = req.body;
       
-      if (fs.existsSync(desktopFile)) {
-        fs.unlinkSync(desktopFile);
+      if (isWebApp !== false) {
+        const desktopFile = path.join(process.env.HOME || "/root", ".local/share/applications", `${pkg}.desktop`);
+        if (fs.existsSync(desktopFile)) {
+          fs.unlinkSync(desktopFile);
+          return res.json({ success: true });
+        }
       }
-      res.json({ success: true });
+      
+      // System package uninstall
+      try {
+        await execAsync(`pacman -Rns --noconfirm ${pkg}`);
+        res.json({ success: true });
+      } catch (pacmanErr) {
+        await execAsync(`DEBIAN_FRONTEND=noninteractive apt-get remove -y ${pkg}`);
+        res.json({ success: true });
+      }
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
