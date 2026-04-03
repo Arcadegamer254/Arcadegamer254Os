@@ -42,6 +42,12 @@ function Desktop() {
       return;
     }
     
+    if (app.exec.startsWith('web:')) {
+      const url = app.exec.split('web:')[1];
+      openWindow(`webapp-${app.name}`, app.name, 'webapp', url);
+      return;
+    }
+    
     try {
       await fetch('/api/system/apps/launch', {
         method: 'POST',
@@ -68,8 +74,11 @@ function Desktop() {
     }
   };
 
-  const renderComponent = (componentName: string) => {
-    switch (componentName) {
+  const renderComponent = (win: any) => {
+    if (win.component === 'webapp') {
+      return <iframe src={win.url} className="w-full h-full border-none bg-white" title={win.title} />;
+    }
+    switch (win.component) {
       case 'settings': return <Settings />;
       case 'appstore': return <AppStore />;
       case 'browser': return <ArcadeBrowser />;
@@ -114,11 +123,11 @@ function Desktop() {
         ))}
       </div>
 
-      {/* Desktop Area (Where windows go) - Responsive padding for bottom/side dock */}
-      <div className="relative z-10 w-full h-[calc(100vh-3.5rem)] md:h-screen md:w-[calc(100vw-4rem)] md:ml-16 p-4 overflow-hidden pointer-events-none">
+      {/* Desktop Area (Where windows go) */}
+      <div className="absolute inset-0 z-10 p-4 overflow-hidden pointer-events-none">
         {windows.map(win => (
           <Window key={win.id} window={win}>
-            {renderComponent(win.component)}
+            {renderComponent(win)}
           </Window>
         ))}
       </div>

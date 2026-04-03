@@ -4,6 +4,7 @@ export interface WindowState {
   id: string;
   title: string;
   component: string;
+  url?: string;
   x: number;
   y: number;
   width: number;
@@ -14,7 +15,7 @@ export interface WindowState {
 
 interface WindowManagerContextType {
   windows: WindowState[];
-  openWindow: (id: string, title: string, component: string) => void;
+  openWindow: (id: string, title: string, component: string, url?: string) => void;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
   updateWindow: (id: string, updates: Partial<WindowState>) => void;
@@ -26,7 +27,7 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [highestZ, setHighestZ] = useState(10);
 
-  const openWindow = (id: string, title: string, component: string) => {
+  const openWindow = (id: string, title: string, component: string, url?: string) => {
     setWindows(prev => {
       if (prev.find(w => w.id === id)) {
         focusWindow(id);
@@ -35,7 +36,7 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
       const newZ = highestZ + 1;
       setHighestZ(newZ);
       return [...prev, {
-        id, title, component,
+        id, title, component, url,
         x: 100 + (prev.length * 30),
         y: 100 + (prev.length * 30),
         width: 800,

@@ -70,6 +70,34 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
     }
   };
 
+  const toggleWifi = async () => {
+    const newState = !wifiEnabled;
+    setWifiEnabled(newState);
+    try {
+      await fetch('/api/system/wifi/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: newState })
+      });
+    } catch (e) {
+      setWifiEnabled(!newState);
+    }
+  };
+
+  const toggleBluetooth = async () => {
+    const newState = !btEnabled;
+    setBtEnabled(newState);
+    try {
+      await fetch('/api/system/bluetooth/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: newState })
+      });
+    } catch (e) {
+      setBtEnabled(!newState);
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -79,7 +107,7 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div 
             className={`p-4 rounded-2xl flex flex-col cursor-pointer transition-colors ${wifiEnabled ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-800 hover:bg-gray-700'}`}
-            onClick={() => setWifiEnabled(!wifiEnabled)}
+            onClick={toggleWifi}
           >
             <div className="flex justify-between items-start mb-2">
               {wifiEnabled ? <Wifi className="w-5 h-5" /> : <WifiOff className="w-5 h-5 text-gray-400" />}
@@ -90,7 +118,7 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
 
           <div 
             className={`p-4 rounded-2xl flex flex-col cursor-pointer transition-colors ${btEnabled ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-800 hover:bg-gray-700'}`}
-            onClick={() => setBtEnabled(!btEnabled)}
+            onClick={toggleBluetooth}
           >
             <div className="flex justify-between items-start mb-2">
               {btEnabled ? <Bluetooth className="w-5 h-5" /> : <BluetoothOff className="w-5 h-5 text-gray-400" />}

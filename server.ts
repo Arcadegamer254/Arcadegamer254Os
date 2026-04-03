@@ -50,6 +50,14 @@ async function startServer() {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
+  app.post("/api/system/wifi/toggle", async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      await execAsync(`nmcli radio wifi ${enabled ? 'on' : 'off'}`);
+      res.json({ success: true });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
   // --- AUDIO (Pipewire/Wireplumber) ---
   app.get("/api/system/audio", async (req, res) => {
     try {
@@ -407,37 +415,22 @@ async function startServer() {
         { name: "App Store", exec: "internal:appstore", icon: "store", category: "System" },
         { name: "System Monitor", exec: "internal:monitor", icon: "activity", category: "System" },
         { name: "Arcade Browser", exec: "internal:browser", icon: "browser", category: "Internet" },
-        // Games
-        { name: "Minecraft", exec: "minecraft-launcher", icon: "game", category: "Games" },
-        { name: "Steam", exec: "steam", icon: "game", category: "Games" },
-        { name: "Lutris", exec: "lutris", icon: "game", category: "Games" },
-        { name: "RetroArch", exec: "retroarch", icon: "game", category: "Games" },
-        { name: "CS:GO", exec: "steam -applaunch 730", icon: "game", category: "Games" },
-        { name: "Dota 2", exec: "steam -applaunch 570", icon: "game", category: "Games" },
-        { name: "SuperTuxKart", exec: "supertuxkart", icon: "game", category: "Games" },
-        { name: "0 A.D.", exec: "0ad", icon: "game", category: "Games" },
-        { name: "Xonotic", exec: "xonotic", icon: "game", category: "Games" },
-        { name: "Minetest", exec: "minetest", icon: "game", category: "Games" },
-        // Apps
-        { name: "Firefox", exec: "firefox", icon: "browser", category: "Internet" },
-        { name: "Google Chrome", exec: "google-chrome-stable", icon: "browser", category: "Internet" },
-        { name: "VLC Media Player", exec: "vlc", icon: "video", category: "Media" },
-        { name: "OBS Studio", exec: "obs", icon: "video", category: "Media" },
-        { name: "Discord", exec: "discord", icon: "chat", category: "Internet" },
-        { name: "GIMP", exec: "gimp", icon: "image", category: "Graphics" },
-        { name: "Krita", exec: "krita", icon: "image", category: "Graphics" },
-        { name: "Blender", exec: "blender", icon: "image", category: "Graphics" },
-        { name: "VS Code", exec: "code", icon: "code", category: "Development" },
-        { name: "LibreOffice", exec: "libreoffice", icon: "office", category: "Office" },
-        { name: "Spotify", exec: "spotify", icon: "music", category: "Media" },
-        { name: "Thunderbird", exec: "thunderbird", icon: "mail", category: "Internet" },
-        { name: "Transmission", exec: "transmission-gtk", icon: "download", category: "Internet" },
-        { name: "FileZilla", exec: "filezilla", icon: "download", category: "Internet" },
-        { name: "Audacity", exec: "audacity", icon: "music", category: "Media" },
-        { name: "Kdenlive", exec: "kdenlive", icon: "video", category: "Media" },
-        { name: "Inkscape", exec: "inkscape", icon: "image", category: "Graphics" },
-        { name: "HandBrake", exec: "ghb", icon: "video", category: "Media" },
-        { name: "VirtualBox", exec: "virtualbox", icon: "system", category: "System" },
+        // Web Games
+        { name: "Minecraft Classic", exec: "web:https://classic.minecraft.net/", icon: "game", category: "Games" },
+        { name: "JS-DOS (DOSBox)", exec: "web:https://js-dos.com/games/", icon: "game", category: "Games" },
+        { name: "Tetris", exec: "web:https://tetris.com/play-tetris", icon: "game", category: "Games" },
+        { name: "Chess.com", exec: "web:https://www.chess.com/play/computer", icon: "game", category: "Games" },
+        { name: "2048", exec: "web:https://play2048.co/", icon: "game", category: "Games" },
+        // Web Apps
+        { name: "VS Code", exec: "web:https://vscode.dev", icon: "code", category: "Development" },
+        { name: "Discord", exec: "web:https://discord.com/app", icon: "chat", category: "Internet" },
+        { name: "Spotify", exec: "web:https://open.spotify.com", icon: "music", category: "Media" },
+        { name: "Photopea (GIMP)", exec: "web:https://www.photopea.com/", icon: "image", category: "Graphics" },
+        { name: "YouTube", exec: "web:https://www.youtube.com", icon: "video", category: "Media" },
+        { name: "Twitch", exec: "web:https://www.twitch.tv", icon: "video", category: "Media" },
+        { name: "GitHub", exec: "web:https://github.com", icon: "code", category: "Development" },
+        { name: "Excalidraw", exec: "web:https://excalidraw.com", icon: "image", category: "Graphics" },
+        { name: "Google Docs", exec: "web:https://docs.google.com", icon: "office", category: "Office" },
         { name: "Docker", exec: "docker-desktop", icon: "system", category: "Development" }
       ];
 
@@ -605,18 +598,11 @@ async function startServer() {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
-  // --- BLUETOOTH ---
-  app.get("/api/system/bluetooth", async (req, res) => {
+  app.post("/api/system/bluetooth/toggle", async (req, res) => {
     try {
-      // Mock bluetooth data since container might not have real bluetooth
-      res.json({
-        enabled: true,
-        devices: [
-          { name: "AirPods Pro", connected: true, battery: 85 },
-          { name: "Logitech MX Master 3", connected: true, battery: 40 },
-          { name: "Keychron K2", connected: false }
-        ]
-      });
+      const { enabled } = req.body;
+      await execAsync(`rfkill ${enabled ? 'unblock' : 'block'} bluetooth`);
+      res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 

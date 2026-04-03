@@ -41,6 +41,13 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       return;
     }
     
+    if (app.exec.startsWith('web:')) {
+      const url = app.exec.split('web:')[1];
+      openWindow(`webapp-${app.name}`, app.name, 'webapp', url);
+      onClose();
+      return;
+    }
+    
     try {
       await fetch('/api/system/apps/launch', {
         method: 'POST',
