@@ -79,12 +79,15 @@ async function startServer() {
   // --- WI-FI ---
   app.get("/api/system/wifi", async (req, res) => {
     try {
+      const radioStatus = await execAsync("nmcli radio wifi");
+      const enabled = radioStatus.stdout.trim() === "enabled";
+      
       const { stdout } = await execAsync("nmcli -t -f SSID,SIGNAL,SECURITY dev wifi");
       const networks = stdout.split("\n").filter(l => l.trim() !== "").map(line => {
         const [ssid, signal, security] = line.split(":");
         return { ssid, signal: parseInt(signal, 10), security };
       }).filter(n => n.ssid && n.ssid !== "--").reduce((acc, curr) => acc.find((i: any) => i.ssid === curr.ssid) ? acc : [...acc, curr], [] as any[]);
-      res.json({ networks });
+      res.json({ enabled, networks });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
@@ -120,8 +123,13 @@ async function startServer() {
 
   app.post("/api/system/audio", async (req, res) => {
     try {
-      const { volume } = req.body;
-      await execAsync(`wpctl set-volume @DEFAULT_AUDIO_SINK@ ${volume / 100}`);
+      const { volume, muted } = req.body;
+      if (volume !== undefined) {
+        await execAsync(`wpctl set-volume @DEFAULT_AUDIO_SINK@ ${volume / 100}`);
+      }
+      if (muted !== undefined) {
+        await execAsync(`wpctl set-mute @DEFAULT_AUDIO_SINK@ ${muted ? 1 : 0}`);
+      }
       res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
@@ -754,6 +762,14 @@ async function startServer() {
     try {
       const { enabled } = req.body;
       await execAsync(`rfkill ${enabled ? 'unblock' : 'block'} bluetooth`);
+      res.json({ success: true });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  app.post("/api/system/bluetooth/connect", async (req, res) => {
+    try {
+      const { mac } = req.body;
+      await execAsync(`bluetoothctl connect ${mac}`);
       res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });

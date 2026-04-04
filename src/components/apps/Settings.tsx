@@ -334,7 +334,13 @@ export function Settings() {
                       type="checkbox" 
                       checked={audioData?.muted || false}
                       onChange={(e) => {
-                        // In a real system we'd toggle mute via wpctl
+                        const muted = e.target.checked;
+                        setAudioData({ ...audioData, muted });
+                        fetch('/api/system/audio', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ muted })
+                        });
                       }}
                       className="rounded bg-black/50 border-white/20 text-blue-500 focus:ring-blue-500"
                     />
@@ -359,38 +365,58 @@ export function Settings() {
                   <Wifi className="w-8 h-8 text-blue-400" />
                   <div>
                     <h3 className="text-xl font-semibold text-white">Wi-Fi</h3>
-                    <p className="text-gray-400 text-sm">{wifiData?.networks?.length ? 'Connected' : 'Scanning...'}</p>
+                    <p className="text-gray-400 text-sm">{wifiData?.enabled ? (wifiData?.networks?.length ? 'Connected' : 'Scanning...') : 'Disabled'}</p>
                   </div>
                 </div>
                 <button 
-                  className={`w-12 h-6 rounded-full transition-colors relative bg-blue-500`}
+                  onClick={() => {
+                    const enabled = !wifiData?.enabled;
+                    setWifiData({ ...wifiData, enabled });
+                    fetch('/api/system/wifi/toggle', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ enabled })
+                    });
+                  }}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${wifiData?.enabled ? 'bg-blue-500' : 'bg-gray-600'}`}
                 >
-                  <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform left-7`} />
+                  <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${wifiData?.enabled ? 'left-7' : 'left-1'}`} />
                 </button>
               </div>
               
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Available Networks</h4>
-                {wifiData?.error ? (
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3 text-red-400">
-                    <WifiOff className="w-5 h-5" />
-                    <span>{wifiData.error}</span>
-                  </div>
-                ) : wifiData?.networks?.map((net: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
-                    <div>
-                      <p className="font-medium text-white">{net.ssid}</p>
-                      <p className="text-xs text-gray-500">{net.security}</p>
+              {wifiData?.enabled && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Available Networks</h4>
+                  {wifiData?.error ? (
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3 text-red-400">
+                      <WifiOff className="w-5 h-5" />
+                      <span>{wifiData.error}</span>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <Wifi className={`w-5 h-5 ${net.signal > 70 ? 'text-green-400' : net.signal > 30 ? 'text-yellow-400' : 'text-red-400'}`} />
-                      <button className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
-                        Connect
-                      </button>
+                  ) : wifiData?.networks?.map((net: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
+                      <div>
+                        <p className="font-medium text-white">{net.ssid}</p>
+                        <p className="text-xs text-gray-500">{net.security}</p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Wifi className={`w-5 h-5 ${net.signal > 70 ? 'text-green-400' : net.signal > 30 ? 'text-yellow-400' : 'text-red-400'}`} />
+                        <button 
+                          onClick={() => {
+                            fetch('/api/system/wifi/connect', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ ssid: net.ssid })
+                            });
+                          }}
+                          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Connect
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -412,7 +438,15 @@ export function Settings() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => setBtData({ ...btData, enabled: !btData?.enabled })}
+                  onClick={() => {
+                    const enabled = !btData?.enabled;
+                    setBtData({ ...btData, enabled });
+                    fetch('/api/system/bluetooth/toggle', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ enabled })
+                    });
+                  }}
                   className={`w-12 h-6 rounded-full transition-colors relative ${btData?.enabled ? 'bg-blue-500' : 'bg-gray-600'}`}
                 >
                   <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${btData?.enabled ? 'left-7' : 'left-1'}`} />
@@ -428,7 +462,16 @@ export function Settings() {
                         <p className="font-medium text-white">{dev.name}</p>
                         <p className="text-xs text-gray-500 font-mono">{dev.mac}</p>
                       </div>
-                      <button className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+                      <button 
+                        onClick={() => {
+                          fetch('/api/system/bluetooth/connect', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mac: dev.mac })
+                          });
+                        }}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
                         Connect
                       </button>
                     </div>
@@ -742,9 +785,12 @@ export function Settings() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-300">Auto-hide Dock</span>
-                <div className="w-10 h-5 bg-gray-600 rounded-full relative">
-                  <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5" />
-                </div>
+                <button 
+                  onClick={() => updatePers({ dockAutoHide: !persData?.dockAutoHide })}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${persData?.dockAutoHide ? 'bg-blue-500' : 'bg-gray-600'}`}
+                >
+                  <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${persData?.dockAutoHide ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
               </div>
             </div>
           </div>
