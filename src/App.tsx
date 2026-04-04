@@ -77,6 +77,54 @@ function Desktop() {
     }
   };
 
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setTimeout(() => setDraggedIndex(index), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+    const newDesktopApps = [...(pers.desktopApps || [])];
+    const [draggedApp] = newDesktopApps.splice(draggedIndex, 1);
+    newDesktopApps.splice(dropIndex, 0, draggedApp);
+
+    setPers({ ...pers, desktopApps: newDesktopApps });
+    setDraggedIndex(null);
+
+    try {
+      await fetch('/api/system/personalization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ desktopApps: newDesktopApps })
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const renderComponent = (win: any) => {
     if (win.component === 'webapp') {
       return (
@@ -114,13 +162,19 @@ function Desktop() {
         {pers.desktopApps?.map((app: any, i: number) => (
           <div 
             key={i}
-            className="group relative flex flex-col items-center justify-center w-24 h-24 rounded-xl hover:bg-white/10 cursor-pointer transition-colors"
+            draggable
+            onDragStart={(e) => handleDragStart(e, i)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, i)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, i)}
+            className={`group relative flex flex-col items-center justify-center w-24 h-24 rounded-xl hover:bg-white/10 cursor-pointer transition-all ${draggedIndex === i ? 'opacity-50' : ''} ${dragOverIndex === i ? 'bg-white/20 scale-105' : ''}`}
             onDoubleClick={() => launchApp(app)}
           >
-            <div className="w-12 h-12 flex items-center justify-center bg-black/20 rounded-xl shadow-sm mb-2">
+            <div className="w-12 h-12 flex items-center justify-center bg-black/20 rounded-xl shadow-sm mb-2 pointer-events-none">
               {getAppIcon(app)}
             </div>
-            <span className="text-white text-xs text-center drop-shadow-md px-1 line-clamp-2 leading-tight">
+            <span className="text-white text-xs text-center drop-shadow-md px-1 line-clamp-2 leading-tight pointer-events-none">
               {app.name}
             </span>
             <button

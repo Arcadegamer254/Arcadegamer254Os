@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Clock, Settings as SettingsIcon, Package, Activity } from 'lucide-react';
+import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Clock, Settings as SettingsIcon, Package, Activity, Terminal, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box } from 'lucide-react';
 import { format } from 'date-fns';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 import { AppLauncher } from './AppLauncher';
 import { QuickSettings } from './QuickSettings';
+import { getAppIcon } from '../utils/icons';
 
 export function SystemTray() {
-  const { openWindow } = useWindowManager();
+  const { windows, openWindow, focusWindow } = useWindowManager();
   const [time, setTime] = useState(new Date());
   const [battery, setBattery] = useState<{ capacity: number; status: string; device: string } | null>(null);
   const [wifiNetworks, setWifiNetworks] = useState<any[]>([]);
@@ -15,6 +16,7 @@ export function SystemTray() {
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
   const [pers, setPers] = useState<any>({ dockPosition: 'Bottom' });
+  const [hoveredWindow, setHoveredWindow] = useState<string | null>(null);
 
   // Fetch Personalization
   useEffect(() => {
@@ -106,6 +108,26 @@ export function SystemTray() {
 
   const isVertical = pers.dockPosition === 'Left' || pers.dockPosition === 'Right';
 
+  // Base pinned apps
+  const pinnedApps = [
+    { id: 'settings', title: 'System Settings', component: 'settings', icon: <SettingsIcon className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
+    { id: 'appstore', title: 'App Store', component: 'appstore', icon: <Package className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
+    { id: 'monitor', title: 'System Monitor', component: 'monitor', icon: <Activity className="w-6 h-6 text-gray-300 group-hover:text-white" /> }
+  ];
+
+  // Combine pinned apps with open windows
+  const dockItems = [...pinnedApps];
+  windows.forEach(win => {
+    if (!dockItems.find(item => item.id === win.id)) {
+      dockItems.push({
+        id: win.id,
+        title: win.title,
+        component: win.component,
+        icon: getAppIcon({ name: win.title, exec: win.component === 'webapp' ? `web:${win.url}` : win.component })
+      });
+    }
+  });
+
   return (
     <>
       <div className={getDockClasses()}>
@@ -120,27 +142,67 @@ export function SystemTray() {
 
         {/* App Dock */}
         <div className={`absolute ${isVertical ? 'top-1/2 -translate-y-1/2 flex-col space-y-2' : 'left-1/2 -translate-x-1/2 flex-row space-x-2'} flex items-center`}>
-          <button 
-            onClick={() => openWindow('settings', 'System Settings', 'settings')}
-            className="p-2.5 hover:bg-white/10 rounded-xl transition-colors group relative"
-          >
-            <SettingsIcon className="w-6 h-6 text-gray-300 group-hover:text-white" />
-            <span className={`absolute ${isVertical ? (pers.dockPosition === 'Left' ? 'left-full ml-2 top-1/2 -translate-y-1/2' : 'right-full mr-2 top-1/2 -translate-y-1/2') : (pers.dockPosition === 'Top' ? 'top-full mt-2 left-1/2 -translate-x-1/2' : 'bottom-full mb-2 left-1/2 -translate-x-1/2')} px-2 py-1 bg-black/80 backdrop-blur-md border border-white/10 text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap`}>Settings</span>
-          </button>
-          <button 
-            onClick={() => openWindow('appstore', 'App Store', 'appstore')}
-            className="p-2.5 hover:bg-white/10 rounded-xl transition-colors group relative"
-          >
-            <Package className="w-6 h-6 text-gray-300 group-hover:text-white" />
-            <span className={`absolute ${isVertical ? (pers.dockPosition === 'Left' ? 'left-full ml-2 top-1/2 -translate-y-1/2' : 'right-full mr-2 top-1/2 -translate-y-1/2') : (pers.dockPosition === 'Top' ? 'top-full mt-2 left-1/2 -translate-x-1/2' : 'bottom-full mb-2 left-1/2 -translate-x-1/2')} px-2 py-1 bg-black/80 backdrop-blur-md border border-white/10 text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap`}>App Store</span>
-          </button>
-          <button 
-            onClick={() => openWindow('monitor', 'System Monitor', 'monitor')}
-            className="p-2.5 hover:bg-white/10 rounded-xl transition-colors group relative"
-          >
-            <Activity className="w-6 h-6 text-gray-300 group-hover:text-white" />
-            <span className={`absolute ${isVertical ? (pers.dockPosition === 'Left' ? 'left-full ml-2 top-1/2 -translate-y-1/2' : 'right-full mr-2 top-1/2 -translate-y-1/2') : (pers.dockPosition === 'Top' ? 'top-full mt-2 left-1/2 -translate-x-1/2' : 'bottom-full mb-2 left-1/2 -translate-x-1/2')} px-2 py-1 bg-black/80 backdrop-blur-md border border-white/10 text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap`}>System Monitor</span>
-          </button>
+          {dockItems.map(item => {
+            const isOpen = windows.some(w => w.id === item.id);
+            const isFocused = windows.length > 0 && windows.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current).id === item.id;
+            
+            return (
+              <div 
+                key={item.id} 
+                className="relative group"
+                onMouseEnter={() => setHoveredWindow(item.id)}
+                onMouseLeave={() => setHoveredWindow(null)}
+              >
+                <button 
+                  onClick={() => {
+                    if (isOpen) {
+                      focusWindow(item.id);
+                    } else {
+                      openWindow(item.id, item.title, item.component);
+                    }
+                  }}
+                  className={`p-2.5 rounded-xl transition-colors relative ${isOpen ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                >
+                  {item.icon}
+                  {isOpen && (
+                    <div className={`absolute ${isVertical ? 'left-0 top-1/2 -translate-y-1/2 w-1 h-4' : 'bottom-0 left-1/2 -translate-x-1/2 w-4 h-1'} rounded-full ${isFocused ? 'bg-blue-400' : 'bg-gray-400'}`} />
+                  )}
+                </button>
+                
+                {/* Window Preview Tooltip */}
+                {hoveredWindow === item.id && (
+                  <div className={`absolute ${isVertical ? (pers.dockPosition === 'Left' ? 'left-full ml-4 top-1/2 -translate-y-1/2' : 'right-full mr-4 top-1/2 -translate-y-1/2') : (pers.dockPosition === 'Top' ? 'top-full mt-4 left-1/2 -translate-x-1/2' : 'bottom-full mb-4 left-1/2 -translate-x-1/2')} z-50 pointer-events-none animate-in fade-in zoom-in-95 duration-200`}>
+                    <div className="bg-gray-900/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl overflow-hidden w-48 flex flex-col">
+                      <div className="px-3 py-2 border-b border-white/10 bg-white/5 flex items-center space-x-2">
+                        <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+                          {React.cloneElement(item.icon as React.ReactElement, { className: 'w-3 h-3' })}
+                        </div>
+                        <span className="text-xs font-medium text-white truncate">{item.title}</span>
+                      </div>
+                      {isOpen ? (
+                        <div className="h-24 bg-gray-800/50 flex items-center justify-center relative overflow-hidden">
+                          <div className="absolute inset-2 border border-white/5 rounded bg-gray-900 flex flex-col">
+                            <div className="h-3 border-b border-white/5 bg-white/5 flex items-center px-1 space-x-0.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
+                            </div>
+                            <div className="flex-1 flex items-center justify-center">
+                              {React.cloneElement(item.icon as React.ReactElement, { className: 'w-8 h-8 opacity-20' })}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-3 py-2 text-[10px] text-gray-400 text-center bg-gray-800/50">
+                          Not running
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className={`flex items-center ${isVertical ? 'flex-col space-y-2' : 'flex-row space-x-2'}`}>
