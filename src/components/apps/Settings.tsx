@@ -3,7 +3,7 @@ import {
   Info, Monitor, Volume2, Battery, HardDrive, Wifi, Bluetooth, 
   Palette, Image as ImageIcon, LayoutGrid, Clock, Globe, 
   AppWindow, PlayCircle, Lock, Shield, Search, ChevronRight,
-  Cpu, Activity, Type, CheckCircle, WifiOff
+  Cpu, Activity, Type, CheckCircle, WifiOff, Sun, Moon
 } from 'lucide-react';
 
 type Category = {
@@ -153,6 +153,7 @@ export function Settings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
     });
+    window.dispatchEvent(new Event('pers-updated'));
   };
 
   const renderContent = () => {
@@ -478,20 +479,21 @@ export function Settings() {
             </div>
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
               <h3 className="text-xl font-semibold text-white">System Theme</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center justify-between bg-white/5 border border-white/10 p-4 rounded-xl">
+                <div className="flex items-center space-x-4">
+                  <div className={`p-3 rounded-xl ${persData?.theme === 'light' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                    {persData?.theme === 'light' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-white text-lg">{persData?.theme === 'light' ? 'Light Mode' : 'Dark Mode'}</p>
+                    <p className="text-sm text-gray-400">Switch between light and dark themes</p>
+                  </div>
+                </div>
                 <button 
-                  onClick={() => updatePers({ theme: 'light' })}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center space-y-3 transition-all ${persData?.theme === 'light' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-white/20 bg-white/5'}`}
+                  onClick={() => updatePers({ theme: persData?.theme === 'light' ? 'dark' : 'light' })}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${persData?.theme === 'light' ? 'bg-blue-500' : 'bg-gray-600'}`}
                 >
-                  <div className="w-16 h-16 rounded-full bg-gray-100 border border-gray-300" />
-                  <span className="font-medium text-white">Light Mode</span>
-                </button>
-                <button 
-                  onClick={() => updatePers({ theme: 'dark' })}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center space-y-3 transition-all ${persData?.theme === 'dark' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-white/20 bg-white/5'}`}
-                >
-                  <div className="w-16 h-16 rounded-full bg-gray-900 border border-gray-700" />
-                  <span className="font-medium text-white">Dark Mode</span>
+                  <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${persData?.theme === 'light' ? 'translate-x-7' : 'translate-x-1'}`} />
                 </button>
               </div>
             </div>

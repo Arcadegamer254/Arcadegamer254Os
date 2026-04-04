@@ -33,7 +33,11 @@ function Desktop() {
     };
     fetchPers();
     const interval = setInterval(fetchPers, 2000); // Poll for changes
-    return () => clearInterval(interval);
+    window.addEventListener('pers-updated', fetchPers);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pers-updated', fetchPers);
+    };
   }, []);
 
   const launchApp = async (app: any) => {
@@ -148,10 +152,10 @@ function Desktop() {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-gray-900 font-sans" style={{ fontFamily: pers.font }}>
+    <div className={`relative w-screen h-screen overflow-hidden bg-gray-900 font-sans ${pers.theme === 'light' ? 'theme-light' : ''}`} style={{ fontFamily: pers.font }}>
       {/* Desktop Background */}
       <div 
-        className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-500"
+        className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-500 no-invert"
         style={{ backgroundImage: `url("${pers.wallpaper}")` }}
       >
         <div className="absolute inset-0 bg-black/20" />
