@@ -15,8 +15,31 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Basic Adblock List
+  const adblockDomains = [
+    'doubleclick.net', 'googleadservices.com', 'googlesyndication.com', 
+    'adsystem.com', 'adservice.google.com', 'amazon-adsystem.com',
+    'adnxs.com', 'criteo.com', 'taboola.com', 'outbrain.com', 'rubiconproject.com',
+    'pubmatic.com', 'openx.net', 'adsrvr.org', 'advertising.com', 'moatads.com'
+  ];
+
   // Proxy for iframe-blocking sites
-  app.use('/api/proxy', createProxyMiddleware({
+  app.use('/api/proxy', (req, res, next) => {
+    try {
+      const targetUrl = req.query.url as string;
+      if (!targetUrl) return next();
+      
+      const urlObj = new URL(targetUrl);
+      const hostname = urlObj.hostname;
+      
+      // Adblock check
+      const useAdblock = req.query.adblock === 'true';
+      if (useAdblock && adblockDomains.some(domain => hostname.includes(domain))) {
+        return res.status(403).send('Blocked by Adblocker');
+      }
+    } catch (e) {}
+    next();
+  }, createProxyMiddleware({
     router: (req: any) => {
       return req.query.url as string;
     },
@@ -579,6 +602,16 @@ async function startServer() {
     { name: "tetris", version: "1.0.0", description: "Play Tetris", installed: false, category: "Games", exec: "web:https://tetris.com/play-tetris", icon: "game", isWebApp: true },
     { name: "chess", version: "1.0.0", description: "Play Chess against the computer", installed: false, category: "Games", exec: "web:https://www.chess.com/play/computer", icon: "game", isWebApp: true },
     { name: "2048", version: "1.0.0", description: "Join the numbers and get to the 2048 tile!", installed: false, category: "Games", exec: "web:https://play2048.co/", icon: "game", isWebApp: true },
+    { name: "figma", version: "1.0.0", description: "The collaborative interface design tool.", installed: false, category: "Graphics", exec: "web:https://www.figma.com", icon: "image", isWebApp: true },
+    { name: "notion", version: "1.0.0", description: "One workspace. Every team.", installed: false, category: "Office", exec: "web:https://www.notion.so", icon: "office", isWebApp: true },
+    { name: "canva", version: "1.0.0", description: "Collaborate & Create Amazing Graphic Design for Free", installed: false, category: "Graphics", exec: "web:https://www.canva.com", icon: "image", isWebApp: true },
+    { name: "chatgpt", version: "1.0.0", description: "OpenAI's conversational AI model.", installed: false, category: "Internet", exec: "web:https://chat.openai.com", icon: "chat", isWebApp: true },
+    { name: "claude", version: "1.0.0", description: "Anthropic's AI assistant.", installed: false, category: "Internet", exec: "web:https://claude.ai", icon: "chat", isWebApp: true },
+    { name: "reddit", version: "1.0.0", description: "Dive into anything", installed: false, category: "Internet", exec: "web:https://www.reddit.com", icon: "browser", isWebApp: true },
+    { name: "x-twitter", version: "1.0.0", description: "It's what's happening", installed: false, category: "Internet", exec: "web:https://twitter.com", icon: "browser", isWebApp: true },
+    { name: "pinterest", version: "1.0.0", description: "Discover recipes, home ideas, style inspiration and other ideas to try.", installed: false, category: "Internet", exec: "web:https://www.pinterest.com", icon: "image", isWebApp: true },
+    { name: "whatsapp", version: "1.0.0", description: "WhatsApp Web", installed: false, category: "Internet", exec: "web:https://web.whatsapp.com", icon: "chat", isWebApp: true },
+    { name: "telegram", version: "1.0.0", description: "Telegram Web", installed: false, category: "Internet", exec: "web:https://web.telegram.org", icon: "chat", isWebApp: true },
   ];
 
   app.get("/api/system/packages/search", async (req, res) => {

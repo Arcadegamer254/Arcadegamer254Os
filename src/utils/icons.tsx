@@ -2,8 +2,21 @@ import React from 'react';
 import { Terminal, Settings as SettingsIcon, Package, Activity, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box } from 'lucide-react';
 
 export const getAppIcon = (app: any) => {
-  const name = app.name.toLowerCase();
-  const exec = app.exec.toLowerCase();
+  if (app.iconUrl) {
+    return <img src={app.iconUrl} alt={app.name} className="w-8 h-8 rounded-md object-cover" />;
+  }
+  
+  if (app.exec && app.exec.startsWith('web:')) {
+    try {
+      const url = new URL(app.exec.replace('web:', ''));
+      return <img src={`https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`} alt={app.name} className="w-8 h-8 rounded-md object-cover" />;
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  const name = app.name ? app.name.toLowerCase() : '';
+  const exec = app.exec ? app.exec.toLowerCase() : '';
   if (name.includes('terminal') || exec.includes('terminal')) return <Terminal className="w-8 h-8 text-green-400" />;
   if (name.includes('settings') || exec.includes('settings')) return <SettingsIcon className="w-8 h-8 text-gray-400" />;
   if (name.includes('store') || name.includes('software') || exec.includes('appstore')) return <Package className="w-8 h-8 text-blue-400" />;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Download, Check, ShoppingBag, Trash2 } from 'lucide-react';
+import { getAppIcon } from '../../utils/icons';
 
 export function AppStore() {
   const [query, setQuery] = useState('');
@@ -111,7 +112,12 @@ export function AppStore() {
               {packages.map((pkg, i) => (
                 <div key={i} className="bg-gray-900 border border-gray-800 p-5 rounded-xl flex flex-col justify-between hover:border-gray-700 transition-colors shadow-sm">
                   <div className="mb-4">
-                    <h3 className="font-bold text-lg text-blue-100 mb-1 truncate" title={pkg.name}>{pkg.name}</h3>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div className="w-10 h-10 shrink-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                        {getAppIcon(pkg)}
+                      </div>
+                      <h3 className="font-bold text-lg text-blue-100 truncate" title={pkg.name}>{pkg.name}</h3>
+                    </div>
                     <p className="text-sm text-gray-400 line-clamp-2 mb-2" title={pkg.description}>{pkg.description}</p>
                     <span className="inline-block text-xs font-mono bg-gray-800 px-2 py-1 rounded text-gray-300">{pkg.version}</span>
                   </div>

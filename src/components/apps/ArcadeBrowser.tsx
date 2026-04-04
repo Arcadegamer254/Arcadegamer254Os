@@ -8,8 +8,9 @@ export function ArcadeBrowser() {
   const [loading, setLoading] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [useProxy, setUseProxy] = useState(false);
+  const [useAdblock, setUseAdblock] = useState(true);
 
-  const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean) => {
+  const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean, forceAdblock?: boolean) => {
     if (e) e.preventDefault();
     let finalUrl = inputUrl.trim();
     
@@ -24,7 +25,12 @@ export function ArcadeBrowser() {
     const isEmbed = embedUrl !== finalUrl;
     
     const shouldProxy = forceProxy !== undefined ? forceProxy : useProxy;
-    const proxiedUrl = (shouldProxy && !isEmbed) ? `/api/proxy?url=${encodeURIComponent(embedUrl)}` : embedUrl;
+    const shouldAdblock = forceAdblock !== undefined ? forceAdblock : useAdblock;
+    
+    let proxiedUrl = embedUrl;
+    if (shouldProxy && !isEmbed) {
+      proxiedUrl = `/api/proxy?url=${encodeURIComponent(embedUrl)}&adblock=${shouldAdblock}`;
+    }
     
     setUrl(proxiedUrl);
     setInputUrl(finalUrl);
@@ -34,7 +40,19 @@ export function ArcadeBrowser() {
   const toggleProxy = () => {
     const newProxyState = !useProxy;
     setUseProxy(newProxyState);
-    handleNavigate(undefined, newProxyState);
+    handleNavigate(undefined, newProxyState, useAdblock);
+  };
+
+  const toggleAdblock = () => {
+    const newAdblockState = !useAdblock;
+    setUseAdblock(newAdblockState);
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'TOGGLE_ADBLOCK',
+        enabled: newAdblockState
+      });
+    }
+    handleNavigate(undefined, useProxy, newAdblockState);
   };
 
   return (
@@ -82,8 +100,16 @@ export function ArcadeBrowser() {
         </form>
         
         <button
+          onClick={toggleAdblock}
+          className={`p-2 rounded-full transition-colors ml-2 ${useAdblock ? 'bg-red-100 text-red-600' : 'hover:bg-gray-200 text-gray-600'}`}
+          title={useAdblock ? "Adblock Enabled (Blocks known ad domains)" : "Adblock Disabled"}
+        >
+          <AlertTriangle className="w-4 h-4" />
+        </button>
+
+        <button
           onClick={toggleProxy}
-          className={`p-2 rounded-full transition-colors ml-2 ${useProxy ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+          className={`p-2 rounded-full transition-colors ml-1 ${useProxy ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
           title={useProxy ? "Proxy Enabled (Bypasses X-Frame-Options but may break complex sites)" : "Proxy Disabled (Complex sites work, but some may refuse to connect)"}
         >
           {useProxy ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
