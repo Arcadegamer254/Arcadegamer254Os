@@ -137,6 +137,7 @@ export function SystemTray() {
   // Base pinned apps
   const pinnedApps = [
     { id: 'settings', title: 'System Settings', component: 'settings', icon: <SettingsIcon className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
+    { id: 'files', title: 'File Explorer', component: 'files', icon: <Folder className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
     { id: 'appstore', title: 'App Store', component: 'appstore', icon: <Package className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
     { id: 'monitor', title: 'System Monitor', component: 'monitor', icon: <Activity className="w-6 h-6 text-gray-300 group-hover:text-white" /> }
   ];

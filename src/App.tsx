@@ -7,6 +7,7 @@ import { AppStore } from './components/apps/AppStore';
 import { ArcadeBrowser } from './components/apps/ArcadeBrowser';
 import { SystemMonitor } from './components/apps/SystemMonitor';
 import { Terminal } from './components/apps/Terminal';
+import { FileExplorer } from './components/apps/FileExplorer';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { getAppIcon } from './utils/icons';
 import { X } from 'lucide-react';
@@ -147,6 +148,7 @@ function Desktop() {
       case 'browser': return <ArcadeBrowser />;
       case 'monitor': return <SystemMonitor />;
       case 'terminal': return <Terminal />;
+      case 'files': return <FileExplorer />;
       default: return <div className="p-4 text-white">Unknown App</div>;
     }
   };

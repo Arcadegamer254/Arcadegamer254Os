@@ -13,7 +13,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
 
   // Basic Adblock List
   const adblockDomains = [
@@ -60,6 +60,84 @@ async function startServer() {
       }
     }
   }));
+
+  // --- FILE EXPLORER ---
+  app.get("/api/system/files/list", async (req, res) => {
+    try {
+      const dirPath = (req.query.path as string) || os.homedir();
+      if (!fs.existsSync(dirPath)) return res.status(404).json({ error: "Path not found" });
+      
+      const items = fs.readdirSync(dirPath, { withFileTypes: true });
+      const files = items.map(item => {
+        const itemPath = path.join(dirPath, item.name);
+        let size = 0;
+        let modified = new Date();
+        try {
+          const stats = fs.statSync(itemPath);
+          size = stats.size;
+          modified = stats.mtime;
+        } catch (e) {}
+        
+        return {
+          name: item.name,
+          isDirectory: item.isDirectory(),
+          path: itemPath,
+          size,
+          modified
+        };
+      });
+      
+      // Sort directories first, then alphabetically
+      files.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      
+      res.json({ path: dirPath, files });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  app.get("/api/system/files/read", async (req, res) => {
+    try {
+      const filePath = req.query.path as string;
+      if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
+      
+      const stats = fs.statSync(filePath);
+      if (stats.isDirectory()) return res.status(400).json({ error: "Cannot read directory as file" });
+      if (stats.size > 10 * 1024 * 1024) return res.status(400).json({ error: "File too large for text editor. Please download it instead." });
+      
+      const content = fs.readFileSync(filePath, "utf-8");
+      res.json({ content });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  app.get("/api/system/files/serve", (req, res) => {
+    const filePath = req.query.path as string;
+    if (!filePath || !fs.existsSync(filePath)) return res.status(404).send("Not found");
+    res.sendFile(path.resolve(filePath));
+  });
+
+  app.post("/api/system/files/action", async (req, res) => {
+    try {
+      const { action, path: targetPath, newPath, isDir, content } = req.body;
+      if (!targetPath) return res.status(400).json({ error: "Path required" });
+      
+      if (action === 'delete') {
+        if (fs.statSync(targetPath).isDirectory()) fs.rmSync(targetPath, { recursive: true, force: true });
+        else fs.unlinkSync(targetPath);
+      } else if (action === 'create') {
+        if (isDir) fs.mkdirSync(targetPath, { recursive: true });
+        else fs.writeFileSync(targetPath, "");
+      } else if (action === 'rename') {
+        if (!newPath) return res.status(400).json({ error: "New path required" });
+        fs.renameSync(targetPath, newPath);
+      } else if (action === 'write') {
+        fs.writeFileSync(targetPath, content || "", "utf-8");
+      }
+      res.json({ success: true });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
 
   // --- BATTERY ---
   app.get("/api/system/battery", async (req, res) => {
@@ -469,6 +547,7 @@ async function startServer() {
         { name: "Settings", exec: "internal:settings", icon: "settings", category: "System" },
         { name: "App Store", exec: "internal:appstore", icon: "store", category: "System" },
         { name: "System Monitor", exec: "internal:monitor", icon: "activity", category: "System" },
+        { name: "File Explorer", exec: "internal:files", icon: "folder", category: "System" },
         { name: "Arcade Browser", exec: "internal:browser", icon: "browser", category: "Internet" },
         // Web Games
         { name: "Minecraft Classic", exec: "web:https://classic.minecraft.net/", icon: "game", category: "Games" },

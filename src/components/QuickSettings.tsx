@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay } from 'date-fns';
-import { Wifi, WifiOff, Bluetooth, BluetoothOff, Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, ChevronLeft, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
+import { Wifi, WifiOff, Bluetooth, BluetoothOff, Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, ChevronLeft, ChevronRight, Settings as SettingsIcon, Volume2, VolumeX } from 'lucide-react';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 
 export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, onClose: () => void, position: string }) {
@@ -9,6 +9,7 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
   const [battery, setBattery] = useState<any>(null);
   const [wifiNetworks, setWifiNetworks] = useState<any[]>([]);
   const [bluetooth, setBluetooth] = useState<any>(null);
+  const [audio, setAudio] = useState<any>(null);
   
   const [wifiEnabled, setWifiEnabled] = useState(true);
   const [btEnabled, setBtEnabled] = useState(true);
@@ -18,8 +19,19 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
     
     // Fetch system states when opened
     fetch('/api/system/battery').then(r => r.json()).then(d => !d.error && setBattery(d)).catch(() => {});
-    fetch('/api/system/wifi').then(r => r.json()).then(d => !d.error && setWifiNetworks(d.networks || [])).catch(() => {});
-    fetch('/api/system/bluetooth').then(r => r.json()).then(d => !d.error && setBluetooth(d)).catch(() => {});
+    fetch('/api/system/wifi').then(r => r.json()).then(d => {
+      if (!d.error) {
+        setWifiNetworks(d.networks || []);
+        setWifiEnabled(d.enabled);
+      }
+    }).catch(() => {});
+    fetch('/api/system/bluetooth').then(r => r.json()).then(d => {
+      if (!d.error) {
+        setBluetooth(d);
+        setBtEnabled(d.enabled);
+      }
+    }).catch(() => {});
+    fetch('/api/system/audio').then(r => r.json()).then(d => !d.error && setAudio(d)).catch(() => {});
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -98,6 +110,18 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
     }
   };
 
+  const changeVolume = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const volume = parseInt(e.target.value);
+    setAudio({ ...audio, volume });
+    try {
+      await fetch('/api/system/audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volume })
+      });
+    } catch (err) {}
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -113,7 +137,7 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
               {wifiEnabled ? <Wifi className="w-5 h-5" /> : <WifiOff className="w-5 h-5 text-gray-400" />}
             </div>
             <span className="font-medium text-sm">Wi-Fi</span>
-            <span className="text-xs text-blue-200 truncate">{wifiEnabled ? (wifiNetworks[0]?.ssid || 'Connected') : 'Off'}</span>
+            <span className="text-xs text-blue-200 truncate">{wifiEnabled ? (wifiNetworks[0]?.ssid || 'On') : 'Off'}</span>
           </div>
 
           <div 
@@ -128,8 +152,20 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
           </div>
         </div>
 
-        {/* Sliders (Mocked for now) */}
+        {/* Sliders */}
         <div className="bg-gray-800/50 rounded-2xl p-4 mb-4 space-y-4">
+          <div className="flex items-center space-x-3">
+            {audio?.muted ? <VolumeX className="w-5 h-5 text-gray-400" /> : <Volume2 className="w-5 h-5 text-gray-400" />}
+            <input 
+              type="range" 
+              min="0" 
+              max="100" 
+              value={audio?.volume || 0}
+              onChange={changeVolume}
+              className="flex-1 h-2 bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-500"
+            />
+            <span className="text-xs text-gray-400 w-8 text-right">{audio?.volume || 0}%</span>
+          </div>
           <div className="flex items-center space-x-3">
             <Battery className="w-5 h-5 text-gray-400" />
             <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
