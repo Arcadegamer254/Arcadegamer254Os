@@ -13,6 +13,20 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Initialize default Chrome OS style folders
+  const homeDir = os.homedir();
+  const defaultFolders = ['Downloads', 'Audio', 'Images', 'Videos', 'Recent'];
+  defaultFolders.forEach(folder => {
+    const folderPath = path.join(homeDir, folder);
+    if (!fs.existsSync(folderPath)) {
+      try {
+        fs.mkdirSync(folderPath, { recursive: true });
+      } catch (e) {
+        console.error(`Failed to create default folder: ${folderPath}`, e);
+      }
+    }
+  });
+
   app.use(express.json({ limit: '50mb' }));
 
   // Basic Adblock List
@@ -64,7 +78,10 @@ async function startServer() {
   // --- FILE EXPLORER ---
   app.get("/api/system/files/list", async (req, res) => {
     try {
-      const dirPath = (req.query.path as string) || os.homedir();
+      let dirPath = (req.query.path as string) || os.homedir();
+      if (dirPath.startsWith('~')) {
+        dirPath = dirPath.replace('~', os.homedir());
+      }
       if (!fs.existsSync(dirPath)) return res.status(404).json({ error: "Path not found" });
       
       const items = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -100,7 +117,8 @@ async function startServer() {
 
   app.get("/api/system/files/read", async (req, res) => {
     try {
-      const filePath = req.query.path as string;
+      let filePath = req.query.path as string;
+      if (filePath && filePath.startsWith('~')) filePath = filePath.replace('~', os.homedir());
       if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
       
       const stats = fs.statSync(filePath);
@@ -113,14 +131,18 @@ async function startServer() {
   });
 
   app.get("/api/system/files/serve", (req, res) => {
-    const filePath = req.query.path as string;
+    let filePath = req.query.path as string;
+    if (filePath && filePath.startsWith('~')) filePath = filePath.replace('~', os.homedir());
     if (!filePath || !fs.existsSync(filePath)) return res.status(404).send("Not found");
     res.sendFile(path.resolve(filePath));
   });
 
   app.post("/api/system/files/action", async (req, res) => {
     try {
-      const { action, path: targetPath, newPath, isDir, content } = req.body;
+      let { action, path: targetPath, newPath, isDir, content } = req.body;
+      if (targetPath && targetPath.startsWith('~')) targetPath = targetPath.replace('~', os.homedir());
+      if (newPath && newPath.startsWith('~')) newPath = newPath.replace('~', os.homedir());
+      
       if (!targetPath) return res.status(400).json({ error: "Path required" });
       
       if (action === 'delete') {

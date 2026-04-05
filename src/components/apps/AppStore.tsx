@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Check, ShoppingBag, Trash2 } from 'lucide-react';
-import { getAppIcon } from '../../utils/icons';
+import { Search, Download, Check, Trash2 } from 'lucide-react';
+import { getAppIcon, AIcon } from '../../utils/icons';
 
 export function AppStore() {
   const [query, setQuery] = useState('');
@@ -81,7 +81,7 @@ export function AppStore() {
   return (
     <div className="flex flex-col h-full bg-gray-950 text-gray-100">
       <div className="flex items-center space-x-4 px-6 py-5 bg-gray-900 border-b border-gray-800">
-        <ShoppingBag className="w-7 h-7 text-blue-500" />
+        <AIcon className="w-7 h-7 text-blue-500" />
         <h1 className="text-xl font-bold">App Store</h1>
       </div>
 

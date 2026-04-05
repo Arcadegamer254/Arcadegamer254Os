@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Clock, Settings as SettingsIcon, Package, Activity, Terminal, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box, Circle } from 'lucide-react';
+import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Clock, Settings as SettingsIcon, Package, Activity, Terminal, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box, Circle, LayoutGrid } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 import { AppLauncher } from './AppLauncher';
 import { QuickSettings } from './QuickSettings';
-import { getAppIcon } from '../utils/icons';
+import { getAppIcon, AIcon } from '../utils/icons';
 
 export function SystemTray() {
-  const { windows, openWindow, focusWindow } = useWindowManager();
+  const { windows, openWindow, focusWindow, overviewMode, setOverviewMode } = useWindowManager();
   const [time, setTime] = useState(new Date());
   const [battery, setBattery] = useState<{ capacity: number; status: string; device: string } | null>(null);
   const [wifiNetworks, setWifiNetworks] = useState<any[]>([]);
@@ -96,20 +96,50 @@ export function SystemTray() {
   };
 
   const getHitAreaClasses = () => {
-    const base = "fixed z-50 flex justify-center w-full bottom-0 h-16";
-    const isHidden = pers.dockAutoHide && !isDockHovered && !isLauncherOpen && !isQuickSettingsOpen;
+    let base = "fixed z-50 flex justify-center ";
+    let transform = "";
     
-    return `${base} transition-transform duration-300 ${isHidden ? 'translate-y-full' : 'translate-y-0'}`;
+    switch (pers.dockPosition) {
+      case 'Top':
+        base += "w-full top-0 h-16";
+        transform = pers.dockAutoHide && !isDockHovered && !isLauncherOpen && !isQuickSettingsOpen ? '-translate-y-full' : 'translate-y-0';
+        break;
+      case 'Left':
+        base += "h-full left-0 w-16 flex-col items-center";
+        transform = pers.dockAutoHide && !isDockHovered && !isLauncherOpen && !isQuickSettingsOpen ? '-translate-x-full' : 'translate-x-0';
+        break;
+      case 'Right':
+        base += "h-full right-0 w-16 flex-col items-center";
+        transform = pers.dockAutoHide && !isDockHovered && !isLauncherOpen && !isQuickSettingsOpen ? 'translate-x-full' : 'translate-x-0';
+        break;
+      case 'Bottom':
+      default:
+        base += "w-full bottom-0 h-16";
+        transform = pers.dockAutoHide && !isDockHovered && !isLauncherOpen && !isQuickSettingsOpen ? 'translate-y-full' : 'translate-y-0';
+        break;
+    }
+    
+    return `${base} transition-transform duration-300 ${transform}`;
   };
 
   const getDockClasses = () => {
-    return "h-12 bg-gray-900/80 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-full flex items-center px-2 mt-2";
+    let base = "bg-gray-900/80 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-full flex items-center ";
+    
+    switch (pers.dockPosition) {
+      case 'Left':
+      case 'Right':
+        return base + "flex-col w-12 py-2 mx-2 space-y-2";
+      case 'Top':
+      case 'Bottom':
+      default:
+        return base + "h-12 px-2 mt-2 space-x-2";
+    }
   };
 
   const getAppIconComponent = (component: string) => {
     switch(component) {
       case 'settings': return <SettingsIcon className="w-5 h-5 text-gray-300" />;
-      case 'appstore': return <Package className="w-5 h-5 text-gray-300" />;
+      case 'appstore': return <AIcon className="w-5 h-5 text-blue-500" />;
       case 'monitor': return <Activity className="w-5 h-5 text-gray-300" />;
       case 'terminal': return <Terminal className="w-5 h-5 text-gray-300" />;
       case 'browser': return <Chrome className="w-5 h-5 text-gray-300" />;
@@ -147,14 +177,23 @@ export function SystemTray() {
             onClick={() => setIsLauncherOpen(!isLauncherOpen)}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all mx-1 ${isLauncherOpen ? 'bg-white/20' : 'hover:bg-white/10'}`}
           >
-            <Circle className="w-4 h-4 text-white fill-white" />
+            <AIcon className="w-6 h-6 text-blue-500" />
+          </button>
+
+          {/* Overview Mode Button */}
+          <button 
+            onClick={() => setOverviewMode(!overviewMode)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all mx-1 ${overviewMode ? 'bg-white/20' : 'hover:bg-white/10'}`}
+            title="Overview Mode (F5)"
+          >
+            <LayoutGrid className="w-4 h-4 text-white" />
           </button>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-white/10 mx-2"></div>
+          <div className={`bg-white/10 ${pers.dockPosition === 'Left' || pers.dockPosition === 'Right' ? 'w-6 h-px my-2' : 'w-px h-6 mx-2'}`}></div>
 
           {/* Open Apps */}
-          <div className="flex items-center space-x-1">
+          <div className={`flex ${pers.dockPosition === 'Left' || pers.dockPosition === 'Right' ? 'flex-col space-y-1' : 'items-center space-x-1'}`}>
             {Object.entries(groupedWindows).map(([component, wins]) => {
               const isActive = wins.some(w => w.isFocused);
               const mainWin = wins[0];
@@ -182,11 +221,11 @@ export function SystemTray() {
                   </button>
                   
                   {/* Chrome OS style active indicator (dot underneath) */}
-                  <div className={`absolute -bottom-1 w-1 h-1 rounded-full transition-all ${isActive ? 'bg-white scale-100' : 'bg-white/50 scale-75 group-hover:scale-100'}`} />
+                  <div className={`absolute ${pers.dockPosition === 'Left' ? '-left-1 top-1/2 -translate-y-1/2' : pers.dockPosition === 'Right' ? '-right-1 top-1/2 -translate-y-1/2' : pers.dockPosition === 'Top' ? '-top-1 left-1/2 -translate-x-1/2' : '-bottom-1 left-1/2 -translate-x-1/2'} w-1 h-1 rounded-full transition-all ${isActive ? 'bg-white scale-100' : 'bg-white/50 scale-75 group-hover:scale-100'}`} />
 
                   {/* Tooltip */}
                   {hoveredWindow === component && (
-                    <div className="absolute bottom-full mb-3 px-3 py-1.5 bg-gray-900/90 backdrop-blur-md text-white text-xs rounded-lg shadow-xl whitespace-nowrap border border-white/10 pointer-events-none z-50">
+                    <div className={`absolute ${pers.dockPosition === 'Left' ? 'left-full ml-3 top-1/2 -translate-y-1/2' : pers.dockPosition === 'Right' ? 'right-full mr-3 top-1/2 -translate-y-1/2' : pers.dockPosition === 'Top' ? 'top-full mt-3 left-1/2 -translate-x-1/2' : 'bottom-full mb-3 left-1/2 -translate-x-1/2'} px-3 py-1.5 bg-gray-900/90 backdrop-blur-md text-white text-xs rounded-lg shadow-xl whitespace-nowrap border border-white/10 pointer-events-none z-50`}>
                       {mainWin.title} {wins.length > 1 ? `(${wins.length})` : ''}
                     </div>
                   )}
@@ -195,25 +234,25 @@ export function SystemTray() {
             })}
           </div>
 
-          {/* Spacer to push quick settings to the right */}
-          <div className="flex-1 min-w-[20px]"></div>
+          {/* Spacer to push quick settings to the end */}
+          <div className="flex-1 min-w-[20px] min-h-[20px]"></div>
 
           {/* Quick Settings Area */}
           <button 
             onClick={() => setIsQuickSettingsOpen(!isQuickSettingsOpen)}
-            className={`h-10 px-3 rounded-full flex items-center space-x-3 transition-all ml-2 ${isQuickSettingsOpen ? 'bg-white/20' : 'hover:bg-white/10 bg-white/5'}`}
+            className={`px-3 rounded-full flex items-center justify-center transition-all ${pers.dockPosition === 'Left' || pers.dockPosition === 'Right' ? 'w-10 h-auto py-3 flex-col space-y-2' : 'h-10 space-x-3 ml-2'} ${isQuickSettingsOpen ? 'bg-white/20' : 'hover:bg-white/10 bg-white/5'}`}
           >
-            <div className="flex items-center space-x-2 text-gray-300">
+            <div className={`flex items-center text-gray-300 ${pers.dockPosition === 'Left' || pers.dockPosition === 'Right' ? 'flex-col space-y-2' : 'space-x-2'}`}>
               {wifiError ? <WifiOff className="w-4 h-4 text-gray-500" /> : <Wifi className="w-4 h-4" />}
               {renderBatteryIcon()}
             </div>
-            <span className="text-sm font-medium text-white">{format(time, 'h:mm a')}</span>
+            <span className={`text-sm font-medium text-white ${pers.dockPosition === 'Left' || pers.dockPosition === 'Right' ? 'text-xs' : ''}`}>{format(time, 'h:mm')}</span>
           </button>
         </div>
       </div>
 
       <AppLauncher isOpen={isLauncherOpen} onClose={() => setIsLauncherOpen(false)} />
-      <QuickSettings isOpen={isQuickSettingsOpen} onClose={() => setIsQuickSettingsOpen(false)} />
+      <QuickSettings isOpen={isQuickSettingsOpen} onClose={() => setIsQuickSettingsOpen(false)} position={pers.dockPosition || 'Bottom'} />
     </>
   );
 }

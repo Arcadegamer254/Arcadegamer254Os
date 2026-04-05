@@ -156,49 +156,78 @@ export function FileExplorer() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 text-gray-100 font-sans relative" onContextMenu={(e) => {
+    <div className="flex h-full bg-gray-900 text-gray-100 font-sans relative" onContextMenu={(e) => {
       if (!fileContent) handleContextMenu(e, null);
     }}>
-      {/* Toolbar */}
-      <div className="flex items-center p-2 bg-gray-800 border-b border-gray-700 gap-2">
-        <div className="flex gap-1">
-          <button onClick={goBack} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button onClick={goForward} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button onClick={goUp} disabled={currentPath === '/'} className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent">
-            <ChevronLeft className="w-5 h-5 rotate-90" />
-          </button>
-          <button onClick={() => loadFiles('')} className="p-1.5 rounded hover:bg-gray-700">
-            <Home className="w-5 h-5" />
-          </button>
-          <button onClick={() => loadFiles(currentPath, false)} className="p-1.5 rounded hover:bg-gray-700">
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+      {/* Sidebar */}
+      <div className="w-48 bg-gray-800/50 border-r border-gray-700 flex flex-col py-2 overflow-y-auto">
+        <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Quick Access</div>
+        <button onClick={() => loadFiles('~/Recent')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+          <Clock className="w-4 h-4 mr-3" /> Recent
+        </button>
+        <button onClick={() => loadFiles('~/Audio')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+          <Music className="w-4 h-4 mr-3" /> Audio
+        </button>
+        <button onClick={() => loadFiles('~/Images')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+          <ImageIcon className="w-4 h-4 mr-3" /> Images
+        </button>
+        <button onClick={() => loadFiles('~/Videos')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+          <Video className="w-4 h-4 mr-3" /> Videos
+        </button>
         
-        <div className="flex-1 flex items-center bg-gray-950 rounded px-3 py-1.5 border border-gray-700">
-          <HardDrive className="w-4 h-4 text-gray-400 mr-2" />
-          <input 
-            type="text" 
-            value={currentPath}
-            onChange={(e) => setCurrentPath(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && loadFiles(currentPath)}
-            className="bg-transparent border-none outline-none flex-1 text-sm text-gray-200"
-          />
-        </div>
-        
-        <div className="flex gap-1">
-          <button onClick={() => { setDialogInput(''); setShowNewDialog('file'); }} className="p-1.5 rounded hover:bg-gray-700 text-gray-300" title="New File">
-            <File className="w-5 h-5" />
-          </button>
-          <button onClick={() => { setDialogInput(''); setShowNewDialog('folder'); }} className="p-1.5 rounded hover:bg-gray-700 text-gray-300" title="New Folder">
-            <Folder className="w-5 h-5" />
-          </button>
-        </div>
+        <div className="px-4 py-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Files</div>
+        <button onClick={() => loadFiles('~')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+          <Folder className="w-4 h-4 mr-3" /> My files
+        </button>
+        <button onClick={() => loadFiles('~/Downloads')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors pl-8">
+          <Download className="w-4 h-4 mr-3" /> Downloads
+        </button>
+        <button onClick={() => loadFiles('/')} className="flex items-center px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors pl-8">
+          <Terminal className="w-4 h-4 mr-3" /> Linux files
+        </button>
       </div>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Toolbar */}
+        <div className="flex items-center p-2 bg-gray-800 border-b border-gray-700 gap-2">
+          <div className="flex gap-1">
+            <button onClick={goBack} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={goForward} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <button onClick={goUp} disabled={currentPath === '/'} className="p-1.5 rounded hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent">
+              <ChevronLeft className="w-5 h-5 rotate-90" />
+            </button>
+            <button onClick={() => loadFiles('')} className="p-1.5 rounded hover:bg-gray-700">
+              <Home className="w-5 h-5" />
+            </button>
+            <button onClick={() => loadFiles(currentPath, false)} className="p-1.5 rounded hover:bg-gray-700">
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          
+          <div className="flex-1 flex items-center bg-gray-950 rounded px-3 py-1.5 border border-gray-700">
+            <HardDrive className="w-4 h-4 text-gray-400 mr-2" />
+            <input 
+              type="text" 
+              value={currentPath}
+              onChange={(e) => setCurrentPath(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && loadFiles(currentPath)}
+              className="bg-transparent border-none outline-none flex-1 text-sm text-gray-200"
+            />
+          </div>
+          
+          <div className="flex gap-1">
+            <button onClick={() => { setDialogInput(''); setShowNewDialog('file'); }} className="p-1.5 rounded hover:bg-gray-700 text-gray-300" title="New File">
+              <File className="w-5 h-5" />
+            </button>
+            <button onClick={() => { setDialogInput(''); setShowNewDialog('folder'); }} className="p-1.5 rounded hover:bg-gray-700 text-gray-300" title="New Folder">
+              <Folder className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -417,6 +446,7 @@ export function FileExplorer() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

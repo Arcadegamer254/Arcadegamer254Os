@@ -1,6 +1,12 @@
 import React from 'react';
 import { Terminal, Settings as SettingsIcon, Package, Activity, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box } from 'lucide-react';
 
+export const AIcon = ({ className = "w-8 h-8 text-blue-500" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 2L3 22h4.5l2.5-6h8l2.5 6H21L12 2zm-1.5 11L12 7l1.5 6h-3z" />
+  </svg>
+);
+
 export const getAppIcon = (app: any) => {
   if (app.iconUrl) {
     return <img src={app.iconUrl} alt={app.name} className="w-8 h-8 rounded-md object-cover" />;
@@ -19,7 +25,7 @@ export const getAppIcon = (app: any) => {
   const exec = app.exec ? app.exec.toLowerCase() : '';
   if (name.includes('terminal') || exec.includes('terminal')) return <Terminal className="w-8 h-8 text-green-400" />;
   if (name.includes('settings') || exec.includes('settings')) return <SettingsIcon className="w-8 h-8 text-gray-400" />;
-  if (name.includes('store') || name.includes('software') || exec.includes('appstore')) return <Package className="w-8 h-8 text-blue-400" />;
+  if (name.includes('store') || name.includes('software') || exec.includes('appstore')) return <AIcon className="w-8 h-8 text-blue-500" />;
   if (name.includes('monitor') || name.includes('task') || exec.includes('monitor')) return <Activity className="w-8 h-8 text-red-400" />;
   if (name.includes('browser') || name.includes('chrome') || name.includes('firefox')) return <Chrome className="w-8 h-8 text-blue-500" />;
   if (name.includes('music') || name.includes('spotify') || name.includes('audacity')) return <Music className="w-8 h-8 text-green-500" />;

@@ -16,13 +16,24 @@ import { playSound } from './utils/sounds';
 import { getEmbedUrl } from './utils/url';
 
 function Desktop() {
-  const { windows, openWindow } = useWindowManager();
+  const { windows, openWindow, overviewMode, setOverviewMode } = useWindowManager();
   const [pers, setPers] = useState<any>({
     wallpaper: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop',
     font: 'Inter',
     theme: 'dark',
     desktopApps: []
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setOverviewMode(!overviewMode);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [overviewMode, setOverviewMode]);
 
   useEffect(() => {
     const fetchPers = async () => {
@@ -196,8 +207,8 @@ function Desktop() {
 
       {/* Desktop Area (Where windows go) */}
       <div className="absolute inset-0 z-10 p-4 overflow-hidden pointer-events-none">
-        {windows.map(win => (
-          <Window key={win.id} window={win}>
+        {windows.map((win, index) => (
+          <Window key={win.id} window={win} index={index} totalWindows={windows.filter(w => w.status !== 'minimized').length}>
             {renderComponent(win)}
           </Window>
         ))}
