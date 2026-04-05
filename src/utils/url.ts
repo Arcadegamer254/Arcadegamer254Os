@@ -8,12 +8,9 @@ export function getEmbedUrl(url: string): string {
       if (urlObj.pathname === '/watch') {
         const videoId = urlObj.searchParams.get('v');
         if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-      } else if (urlObj.pathname === '/') {
-        // YouTube homepage blocks iframes, use Piped as an alternative frontend
-        return 'https://piped.video/';
-      } else if (urlObj.pathname.startsWith('/results')) {
-        return `https://piped.video${urlObj.pathname}${urlObj.search}`;
       }
+      // For root or results, just return the original URL and let the proxy handle it
+      return url;
     }
     if (hostname === 'youtu.be') {
       const videoId = urlObj.pathname.slice(1);
@@ -22,7 +19,9 @@ export function getEmbedUrl(url: string): string {
 
     // Spotify
     if (hostname === 'open.spotify.com') {
-      if (!urlObj.pathname.startsWith('/embed/')) {
+      if (urlObj.pathname === '/' || urlObj.pathname === '') {
+        return url; // Let proxy handle the root web player
+      } else if (!urlObj.pathname.startsWith('/embed/')) {
         return `https://open.spotify.com/embed${urlObj.pathname}`;
       }
     }

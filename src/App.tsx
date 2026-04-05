@@ -145,7 +145,7 @@ function Desktop() {
     switch (win.component) {
       case 'settings': return <Settings />;
       case 'appstore': return <AppStore />;
-      case 'browser': return <ArcadeBrowser />;
+      case 'browser': return <ArcadeBrowser initialUrl={win.url} />;
       case 'monitor': return <SystemMonitor />;
       case 'terminal': return <Terminal />;
       case 'files': return <FileExplorer />;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Clock, Settings as SettingsIcon, Package, Activity, Terminal, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box } from 'lucide-react';
+import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Clock, Settings as SettingsIcon, Package, Activity, Terminal, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box, Circle } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import { useWindowManager } from '../contexts/WindowManagerContext';
@@ -68,14 +68,16 @@ export function SystemTray() {
       try {
         const res = await fetch('/api/system/wifi');
         const data = await res.json();
-        if (data.error) {
-          setWifiError(data.error);
+        if (data.error || !data.enabled) {
+          setWifiError(data.error || 'Wi-Fi Disabled');
+          setWifiNetworks([]);
         } else {
           setWifiNetworks(data.networks || []);
           setWifiError(null);
         }
       } catch (err) {
         setWifiError('Failed to fetch Wi-Fi');
+        setWifiNetworks([]);
       }
     };
 
@@ -94,66 +96,42 @@ export function SystemTray() {
   };
 
   const getHitAreaClasses = () => {
-    const base = "fixed z-50";
+    const base = "fixed z-50 flex justify-center w-full bottom-0 h-16";
     const isHidden = pers.dockAutoHide && !isDockHovered && !isLauncherOpen && !isQuickSettingsOpen;
     
-    switch (pers.dockPosition) {
-      case 'Top': return `${base} top-0 left-0 right-0 ${isHidden ? 'h-2' : 'h-14'}`;
-      case 'Left': return `${base} top-0 bottom-0 left-0 ${isHidden ? 'w-2' : 'w-16'}`;
-      case 'Right': return `${base} top-0 bottom-0 right-0 ${isHidden ? 'w-2' : 'w-16'}`;
-      case 'Bottom': default: return `${base} bottom-0 left-0 right-0 ${isHidden ? 'h-2' : 'h-14'}`;
-    }
+    return `${base} transition-transform duration-300 ${isHidden ? 'translate-y-full' : 'translate-y-0'}`;
   };
 
   const getDockClasses = () => {
-    const base = "absolute bg-gray-900/60 backdrop-blur-2xl border-white/10 flex items-center justify-between text-gray-100 transition-all shadow-[0_0_30px_rgba(0,0,0,0.3)]";
-    switch (pers.dockPosition) {
-      case 'Top':
-        return `${base} top-0 left-0 right-0 h-14 flex-row px-4 border-b`;
-      case 'Left':
-        return `${base} top-0 bottom-0 left-0 w-16 flex-col py-4 px-0 border-r`;
-      case 'Right':
-        return `${base} top-0 bottom-0 right-0 w-16 flex-col py-4 px-0 border-l`;
-      case 'Bottom':
-      default:
-        return `${base} bottom-0 left-0 right-0 h-14 flex-row px-4 border-t`;
+    return "h-12 bg-gray-900/80 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-full flex items-center px-2 mt-2";
+  };
+
+  const getAppIconComponent = (component: string) => {
+    switch(component) {
+      case 'settings': return <SettingsIcon className="w-5 h-5 text-gray-300" />;
+      case 'appstore': return <Package className="w-5 h-5 text-gray-300" />;
+      case 'monitor': return <Activity className="w-5 h-5 text-gray-300" />;
+      case 'terminal': return <Terminal className="w-5 h-5 text-gray-300" />;
+      case 'browser': return <Chrome className="w-5 h-5 text-gray-300" />;
+      case 'files': return <Folder className="w-5 h-5 text-gray-300" />;
+      default: 
+        if (component.startsWith('webapp-')) {
+          if (component.toLowerCase().includes('spotify')) return <Music className="w-5 h-5 text-gray-300" />;
+          if (component.toLowerCase().includes('youtube')) return <Video className="w-5 h-5 text-gray-300" />;
+          return <Box className="w-5 h-5 text-gray-300" />;
+        }
+        return <Box className="w-5 h-5 text-gray-300" />;
     }
   };
 
-  const getDockAnimation = () => {
-    if (!pers.dockAutoHide) return { x: 0, y: 0 };
-    if (isDockHovered || isLauncherOpen || isQuickSettingsOpen) return { x: 0, y: 0 };
-    
-    switch (pers.dockPosition) {
-      case 'Top': return { y: '-100%' };
-      case 'Left': return { x: '-100%' };
-      case 'Right': return { x: '100%' };
-      case 'Bottom': default: return { y: '100%' };
+  // Group windows by component to show multiple instances
+  const groupedWindows = windows.reduce((acc, win) => {
+    if (!acc[win.component]) {
+      acc[win.component] = [];
     }
-  };
-
-  const isVertical = pers.dockPosition === 'Left' || pers.dockPosition === 'Right';
-
-  // Base pinned apps
-  const pinnedApps = [
-    { id: 'settings', title: 'System Settings', component: 'settings', icon: <SettingsIcon className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
-    { id: 'files', title: 'File Explorer', component: 'files', icon: <Folder className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
-    { id: 'appstore', title: 'App Store', component: 'appstore', icon: <Package className="w-6 h-6 text-gray-300 group-hover:text-white" /> },
-    { id: 'monitor', title: 'System Monitor', component: 'monitor', icon: <Activity className="w-6 h-6 text-gray-300 group-hover:text-white" /> }
-  ];
-
-  // Combine pinned apps with open windows
-  const dockItems = [...pinnedApps];
-  windows.forEach(win => {
-    if (!dockItems.find(item => item.id === win.id)) {
-      dockItems.push({
-        id: win.id,
-        title: win.title,
-        component: win.component,
-        icon: getAppIcon({ name: win.title, exec: win.component === 'webapp' ? `web:${win.url}` : win.component })
-      });
-    }
-  });
+    acc[win.component].push(win);
+    return acc;
+  }, {} as Record<string, typeof windows>);
 
   return (
     <>
@@ -162,78 +140,54 @@ export function SystemTray() {
         onMouseEnter={() => setIsDockHovered(true)}
         onMouseLeave={() => setIsDockHovered(false)}
       >
-        <motion.div 
-          className={getDockClasses()}
-          animate={getDockAnimation()}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        >
-          <div className={`flex items-center ${isVertical ? 'flex-col space-y-4' : 'flex-row space-x-2'}`}>
-            <button 
-              onClick={() => setIsLauncherOpen(!isLauncherOpen)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 shadow-lg ${isLauncherOpen ? 'bg-blue-500 scale-95' : 'bg-blue-600 hover:bg-blue-500 hover:scale-105'}`}
-            >
-              <span className="font-bold text-lg">A</span>
-            </button>
-          </div>
+        <div className={getDockClasses()}>
+          
+          {/* Launcher Button (Chrome OS style circle) */}
+          <button 
+            onClick={() => setIsLauncherOpen(!isLauncherOpen)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all mx-1 ${isLauncherOpen ? 'bg-white/20' : 'hover:bg-white/10'}`}
+          >
+            <Circle className="w-4 h-4 text-white fill-white" />
+          </button>
 
-          {/* App Dock */}
-          <div className={`absolute ${isVertical ? 'top-1/2 -translate-y-1/2 flex-col space-y-2' : 'left-1/2 -translate-x-1/2 flex-row space-x-2'} flex items-center`}>
-            {dockItems.map(item => {
-              const isOpen = windows.some(w => w.id === item.id);
-              const isFocused = windows.length > 0 && windows.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current).id === item.id;
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 mx-2"></div>
+
+          {/* Open Apps */}
+          <div className="flex items-center space-x-1">
+            {Object.entries(groupedWindows).map(([component, wins]) => {
+              const isActive = wins.some(w => w.isFocused);
+              const mainWin = wins[0];
               
               return (
                 <div 
-                  key={item.id} 
-                  className="relative group"
-                  onMouseEnter={() => setHoveredWindow(item.id)}
+                  key={component}
+                  className="relative group flex flex-col items-center"
+                  onMouseEnter={() => setHoveredWindow(component)}
                   onMouseLeave={() => setHoveredWindow(null)}
                 >
-                  <button 
+                  <button
                     onClick={() => {
-                      if (isOpen) {
-                        focusWindow(item.id);
+                      if (isActive) {
+                        // If active, minimize all
+                        // (Requires minimize function in context, for now just focus)
+                        focusWindow(mainWin.id);
                       } else {
-                        openWindow(item.id, item.title, item.component);
+                        focusWindow(mainWin.id);
                       }
                     }}
-                    className={`p-2.5 rounded-xl transition-colors relative ${isOpen ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
                   >
-                    {item.icon}
-                    {isOpen && (
-                      <div className={`absolute ${isVertical ? 'left-0 top-1/2 -translate-y-1/2 w-1 h-4' : 'bottom-0 left-1/2 -translate-x-1/2 w-4 h-1'} rounded-full ${isFocused ? 'bg-blue-400' : 'bg-gray-400'}`} />
-                    )}
+                    {getAppIconComponent(component)}
                   </button>
                   
-                  {/* Window Preview Tooltip */}
-                  {hoveredWindow === item.id && (
-                    <div className={`absolute ${isVertical ? (pers.dockPosition === 'Left' ? 'left-full ml-4 top-1/2 -translate-y-1/2' : 'right-full mr-4 top-1/2 -translate-y-1/2') : (pers.dockPosition === 'Top' ? 'top-full mt-4 left-1/2 -translate-x-1/2' : 'bottom-full mb-4 left-1/2 -translate-x-1/2')} z-50 pointer-events-none animate-in fade-in zoom-in-95 duration-200`}>
-                      <div className="bg-gray-900/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl overflow-hidden w-48 flex flex-col">
-                        <div className="px-3 py-2 border-b border-white/10 bg-white/5 flex items-center space-x-2">
-                          <div className="w-4 h-4 shrink-0 flex items-center justify-center">
-                            {React.cloneElement(item.icon as React.ReactElement, { className: 'w-3 h-3' })}
-                          </div>
-                          <span className="text-xs font-medium text-white truncate">{item.title}</span>
-                        </div>
-                        {isOpen ? (
-                          <div className="h-24 bg-gray-800/50 flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-2 border border-white/5 rounded bg-gray-900 flex flex-col">
-                              <div className="h-3 border-b border-white/5 bg-white/5 flex items-center px-1 space-x-0.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
-                              </div>
-                              <div className="flex-1 flex items-center justify-center">
-                                {React.cloneElement(item.icon as React.ReactElement, { className: 'w-8 h-8 opacity-20' })}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="px-3 py-2 text-[10px] text-gray-400 text-center bg-gray-800/50">
-                            Not running
-                          </div>
-                        )}
-                      </div>
+                  {/* Chrome OS style active indicator (dot underneath) */}
+                  <div className={`absolute -bottom-1 w-1 h-1 rounded-full transition-all ${isActive ? 'bg-white scale-100' : 'bg-white/50 scale-75 group-hover:scale-100'}`} />
+
+                  {/* Tooltip */}
+                  {hoveredWindow === component && (
+                    <div className="absolute bottom-full mb-3 px-3 py-1.5 bg-gray-900/90 backdrop-blur-md text-white text-xs rounded-lg shadow-xl whitespace-nowrap border border-white/10 pointer-events-none z-50">
+                      {mainWin.title} {wins.length > 1 ? `(${wins.length})` : ''}
                     </div>
                   )}
                 </div>
@@ -241,27 +195,25 @@ export function SystemTray() {
             })}
           </div>
 
-          <div className={`flex items-center ${isVertical ? 'flex-col space-y-2' : 'flex-row space-x-2'}`}>
-            {/* Unified Quick Settings Button */}
-            <button 
-              onClick={() => setIsQuickSettingsOpen(!isQuickSettingsOpen)}
-              className={`flex items-center justify-center hover:bg-white/10 p-2 rounded-xl transition-colors cursor-pointer ${isQuickSettingsOpen ? 'bg-white/10' : ''} ${isVertical ? 'flex-col space-y-2' : 'space-x-3'}`}
-            >
-              <div className={`flex items-center ${isVertical ? 'flex-col space-y-2' : 'space-x-2'}`}>
-                {wifiError ? <WifiOff className="w-4 h-4 text-gray-500" /> : <Wifi className="w-4 h-4" />}
-                {renderBatteryIcon()}
-              </div>
-              <div className={`flex flex-col ${isVertical ? 'items-center' : 'items-end'}`}>
-                <span className={`text-sm font-medium leading-none ${isVertical ? 'text-xs text-center mt-1' : ''}`}>{format(time, 'HH:mm')}</span>
-                {!isVertical && <span className="text-[10px] text-gray-400 leading-none mt-1">{format(time, 'MM/dd/yyyy')}</span>}
-              </div>
-            </button>
-          </div>
-        </motion.div>
+          {/* Spacer to push quick settings to the right */}
+          <div className="flex-1 min-w-[20px]"></div>
+
+          {/* Quick Settings Area */}
+          <button 
+            onClick={() => setIsQuickSettingsOpen(!isQuickSettingsOpen)}
+            className={`h-10 px-3 rounded-full flex items-center space-x-3 transition-all ml-2 ${isQuickSettingsOpen ? 'bg-white/20' : 'hover:bg-white/10 bg-white/5'}`}
+          >
+            <div className="flex items-center space-x-2 text-gray-300">
+              {wifiError ? <WifiOff className="w-4 h-4 text-gray-500" /> : <Wifi className="w-4 h-4" />}
+              {renderBatteryIcon()}
+            </div>
+            <span className="text-sm font-medium text-white">{format(time, 'h:mm a')}</span>
+          </button>
+        </div>
       </div>
-      
+
       <AppLauncher isOpen={isLauncherOpen} onClose={() => setIsLauncherOpen(false)} />
-      <QuickSettings isOpen={isQuickSettingsOpen} onClose={() => setIsQuickSettingsOpen(false)} position={pers.dockPosition} />
+      <QuickSettings isOpen={isQuickSettingsOpen} onClose={() => setIsQuickSettingsOpen(false)} />
     </>
   );
 }

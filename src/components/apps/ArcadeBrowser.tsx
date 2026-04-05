@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Globe, Search, ArrowLeft, ArrowRight, RotateCw, Home, AlertTriangle, Shield, ShieldOff } from 'lucide-react';
 import { getEmbedUrl } from '../../utils/url';
 
-export function ArcadeBrowser() {
-  const [url, setUrl] = useState('https://www.google.com/webhp?igu=1');
-  const [inputUrl, setInputUrl] = useState('https://www.google.com');
+export function ArcadeBrowser({ initialUrl }: { initialUrl?: string }) {
+  const [url, setUrl] = useState(initialUrl || 'https://www.google.com/webhp?igu=1');
+  const [inputUrl, setInputUrl] = useState(initialUrl || 'https://www.google.com');
   const [loading, setLoading] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [useProxy, setUseProxy] = useState(false);
   const [useAdblock, setUseAdblock] = useState(true);
 
-  const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean, forceAdblock?: boolean) => {
+  useEffect(() => {
+    if (initialUrl) {
+      handleNavigate(undefined, false, true, initialUrl);
+    }
+  }, [initialUrl]);
+
+  const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean, forceAdblock?: boolean, targetUrl?: string) => {
     if (e) e.preventDefault();
-    let finalUrl = inputUrl.trim();
+    let finalUrl = (targetUrl || inputUrl).trim();
     
     // Check if it's a search query (no dot, or contains spaces)
     if (!finalUrl.includes('.') || finalUrl.includes(' ')) {
