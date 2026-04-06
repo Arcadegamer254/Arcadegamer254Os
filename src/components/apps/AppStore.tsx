@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Check, Trash2 } from 'lucide-react';
+import { Search, Download, Check, Trash2, ShoppingBag } from 'lucide-react';
 import { getAppIcon, AIcon } from '../../utils/icons';
 
 export function AppStore() {

@@ -8,7 +8,7 @@ import { QuickSettings } from './QuickSettings';
 import { getAppIcon, AIcon } from '../utils/icons';
 
 export function SystemTray() {
-  const { windows, openWindow, focusWindow, overviewMode, setOverviewMode } = useWindowManager();
+  const { windows, openWindow, focusWindow, minimizeWindow, overviewMode, setOverviewMode } = useWindowManager();
   const [time, setTime] = useState(new Date());
   const [battery, setBattery] = useState<{ capacity: number; status: string; device: string } | null>(null);
   const [wifiNetworks, setWifiNetworks] = useState<any[]>([]);
@@ -194,8 +194,9 @@ export function SystemTray() {
 
           {/* Open Apps */}
           <div className={`flex ${pers.dockPosition === 'Left' || pers.dockPosition === 'Right' ? 'flex-col space-y-1' : 'items-center space-x-1'}`}>
-            {Object.entries(groupedWindows).map(([component, wins]) => {
-              const isActive = wins.some(w => w.isFocused);
+            {Object.entries(groupedWindows).map(([component, wins]: [string, any[]]) => {
+              const highestZ = Math.max(10, ...windows.map(w => w.zIndex));
+              const isActive = wins.some(w => w.zIndex === highestZ && w.status !== 'minimized');
               const mainWin = wins[0];
               
               return (
@@ -208,14 +209,12 @@ export function SystemTray() {
                   <button
                     onClick={() => {
                       if (isActive) {
-                        // If active, minimize all
-                        // (Requires minimize function in context, for now just focus)
-                        focusWindow(mainWin.id);
+                        minimizeWindow(mainWin.id);
                       } else {
                         focusWindow(mainWin.id);
                       }
                     }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${isActive ? 'bg-white/10' : 'hover:bg-white/5'} hover:scale-110 active:scale-95`}
                   >
                     {getAppIconComponent(component)}
                   </button>

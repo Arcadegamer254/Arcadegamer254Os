@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Folder, File, ChevronRight, ChevronLeft, Home, HardDrive, FileText, Image as ImageIcon, Music, Video, Archive, Code, Search, RefreshCw, AlertCircle, Plus, Trash2, Edit2, Save, Download } from 'lucide-react';
+import { Folder, File, ChevronRight, ChevronLeft, Home, HardDrive, FileText, Image as ImageIcon, Music, Video, Archive, Code, Search, RefreshCw, AlertCircle, Plus, Trash2, Edit2, Save, Download, Clock, Terminal } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function FileExplorer() {

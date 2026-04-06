@@ -33,23 +33,39 @@ const WindowManagerContext = createContext<WindowManagerContextType | undefined>
 
 export function WindowManagerProvider({ children }: { children: ReactNode }) {
   const [windows, setWindows] = useState<WindowState[]>([]);
-  const [highestZ, setHighestZ] = useState(10);
   const [overviewMode, setOverviewMode] = useState(false);
 
   const openWindow = (id: string, title: string, component: string, url?: string) => {
     setWindows(prev => {
       if (prev.find(w => w.id === id)) {
-        focusWindow(id);
-        return prev;
+        // Window exists, just focus it
+        const currentHighestZ = Math.max(10, ...prev.map(w => w.zIndex));
+        const newZ = currentHighestZ + 1;
+        
+        return prev.map(w => {
+          if (w.id === id) {
+            return { ...w, zIndex: newZ, status: w.status === 'minimized' ? 'normal' : w.status };
+          }
+          return w;
+        });
       }
-      const newZ = highestZ + 1;
-      setHighestZ(newZ);
+      
+      // New window
+      const currentHighestZ = Math.max(10, ...prev.map(w => w.zIndex));
+      const newZ = currentHighestZ + 1;
+      
+      const screenW = globalThis.window?.innerWidth || 800;
+      const screenH = globalThis.window?.innerHeight || 600;
+      
+      const width = Math.min(800, screenW * 0.9);
+      const height = Math.min(600, screenH * 0.8);
+      
+      const x = Math.max(0, (screenW - width) / 2) + (prev.length * 20);
+      const y = Math.max(0, (screenH - height) / 2) + (prev.length * 20);
+      
       return [...prev, {
         id, title, component, url,
-        x: 100 + (prev.length * 30),
-        y: 100 + (prev.length * 30),
-        width: 800,
-        height: 600,
+        x, y, width, height,
         zIndex: newZ,
         status: 'normal'
       }];
@@ -65,18 +81,17 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
       const win = prev.find(w => w.id === id);
       if (!win) return prev;
       
+      const currentHighestZ = Math.max(10, ...prev.map(w => w.zIndex));
+      
       let newWindows = [...prev];
       
-      // If it was minimized, restore it to normal or its previous maximized/snapped state
-      // For simplicity, we'll restore to normal if it was minimized
       if (win.status === 'minimized') {
         newWindows = newWindows.map(w => w.id === id ? { ...w, status: 'normal' } : w);
       }
 
-      if (win.zIndex === highestZ && win.status !== 'minimized') return newWindows;
+      if (win.zIndex === currentHighestZ && win.status !== 'minimized') return newWindows;
       
-      const newZ = highestZ + 1;
-      setHighestZ(newZ);
+      const newZ = currentHighestZ + 1;
       return newWindows.map(w => w.id === id ? { ...w, zIndex: newZ } : w);
     });
   };

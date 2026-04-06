@@ -208,27 +208,52 @@ async function startServer() {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
-  // --- AUDIO (Pipewire/Wireplumber) ---
+  // --- AUDIO (Pipewire/Wireplumber/PulseAudio) ---
   app.get("/api/system/audio", async (req, res) => {
     try {
-      const { stdout } = await execAsync("wpctl get-volume @DEFAULT_AUDIO_SINK@");
-      const match = stdout.match(/Volume:\s+([\d.]+)/);
-      const isMuted = stdout.includes("[MUTED]");
-      if (!match) throw new Error("Could not parse volume");
-      res.json({ volume: Math.round(parseFloat(match[1]) * 100), muted: isMuted });
+      try {
+        const { stdout } = await execAsync("wpctl get-volume @DEFAULT_AUDIO_SINK@");
+        const match = stdout.match(/Volume:\s+([\d.]+)/);
+        const isMuted = stdout.includes("[MUTED]");
+        if (match) {
+          return res.json({ volume: Math.round(parseFloat(match[1]) * 100), muted: isMuted, system: "PipeWire" });
+        }
+      } catch (e) {
+        // Fallback to PulseAudio
+        const { stdout } = await execAsync("pactl get-sink-volume @DEFAULT_SINK@");
+        const match = stdout.match(/Volume:.*?(\d+)%/);
+        const { stdout: muteOut } = await execAsync("pactl get-sink-mute @DEFAULT_SINK@");
+        const isMuted = muteOut.includes("yes");
+        if (match) {
+          return res.json({ volume: parseInt(match[1]), muted: isMuted, system: "PulseAudio" });
+        }
+        throw new Error("Could not parse volume");
+      }
     } catch (error: any) { 
-      res.json({ error: "Audio service unavailable (wpctl failed or not found)" }); 
+      res.json({ error: "Audio service unavailable (wpctl/pactl failed or not found)" }); 
     }
   });
 
   app.post("/api/system/audio", async (req, res) => {
     try {
       const { volume, muted } = req.body;
-      if (volume !== undefined) {
-        await execAsync(`wpctl set-volume @DEFAULT_AUDIO_SINK@ ${volume / 100}`);
-      }
-      if (muted !== undefined) {
-        await execAsync(`wpctl set-mute @DEFAULT_AUDIO_SINK@ ${muted ? 1 : 0}`);
+      
+      try {
+        // Try PipeWire first
+        if (volume !== undefined) {
+          await execAsync(`wpctl set-volume @DEFAULT_AUDIO_SINK@ ${volume / 100}`);
+        }
+        if (muted !== undefined) {
+          await execAsync(`wpctl set-mute @DEFAULT_AUDIO_SINK@ ${muted ? 1 : 0}`);
+        }
+      } catch (e) {
+        // Fallback to PulseAudio
+        if (volume !== undefined) {
+          await execAsync(`pactl set-sink-volume @DEFAULT_SINK@ ${volume}%`);
+        }
+        if (muted !== undefined) {
+          await execAsync(`pactl set-sink-mute @DEFAULT_SINK@ ${muted ? 1 : 0}`);
+        }
       }
       res.json({ success: true });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
@@ -721,6 +746,12 @@ async function startServer() {
     { name: "pinterest", version: "1.0.0", description: "Discover recipes, home ideas, style inspiration and other ideas to try.", installed: false, category: "Internet", exec: "web:https://www.pinterest.com", icon: "image", isWebApp: true },
     { name: "whatsapp", version: "1.0.0", description: "WhatsApp Web", installed: false, category: "Internet", exec: "web:https://web.whatsapp.com", icon: "chat", isWebApp: true },
     { name: "telegram", version: "1.0.0", description: "Telegram Web", installed: false, category: "Internet", exec: "web:https://web.telegram.org", icon: "chat", isWebApp: true },
+    { name: "gedit-web", version: "1.0.0", description: "Simple text editor (Web Version)", installed: false, category: "Office", exec: "web:https://vscode.dev", icon: "code", isWebApp: true },
+    { name: "sublime-text-web", version: "1.0.0", description: "Sophisticated text editor for code, markup and prose", installed: false, category: "Development", exec: "web:https://vscode.dev", icon: "code", isWebApp: true },
+    { name: "vlc-web", version: "1.0.0", description: "VLC media player (Web Player)", installed: false, category: "Media", exec: "web:https://www.videolan.org/vlc/index.html", icon: "video", isWebApp: true },
+    { name: "audacious-web", version: "1.0.0", description: "Advanced audio player", installed: false, category: "Media", exec: "web:https://open.spotify.com", icon: "music", isWebApp: true },
+    { name: "onlyoffice", version: "1.0.0", description: "Powerful online office suite", installed: false, category: "Office", exec: "web:https://personal.onlyoffice.com", icon: "office", isWebApp: true },
+    { name: "libreoffice-web", version: "1.0.0", description: "Office suite (Web Version)", installed: false, category: "Office", exec: "web:https://www.rollapp.com/app/lowriter", icon: "office", isWebApp: true },
   ];
 
   app.get("/api/system/packages/search", async (req, res) => {
