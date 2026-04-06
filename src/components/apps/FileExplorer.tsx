@@ -17,6 +17,9 @@ export function FileExplorer() {
   const [showNewDialog, setShowNewDialog] = useState<'file' | 'folder' | null>(null);
   const [showRenameDialog, setShowRenameDialog] = useState<any | null>(null);
   const [dialogInput, setDialogInput] = useState('');
+  
+  const [draggedFile, setDraggedFile] = useState<any | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   useEffect(() => {
     loadFiles(''); // Load home directory initially
@@ -79,7 +82,7 @@ export function FileExplorer() {
 
   const isMediaFile = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
-    return ['png', 'jpg', 'jpeg', 'gif', 'svg', 'mp4', 'webm', 'mp3', 'wav', 'ogg'].includes(ext || '');
+    return ['png', 'jpg', 'jpeg', 'gif', 'svg', 'mp4', 'webm', 'mp3', 'wav', 'ogg', 'pdf'].includes(ext || '');
   };
 
   const handleItemClick = async (item: any) => {
@@ -132,6 +135,42 @@ export function FileExplorer() {
     } catch (err: any) {
       alert(err.message);
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent, file: any) => {
+    setDraggedFile(file);
+    e.dataTransfer.effectAllowed = 'move';
+    // Add a slight delay to avoid drag image issues
+    setTimeout(() => {
+      // Optional: visual feedback on the dragged item
+    }, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, file: any) => {
+    e.preventDefault();
+    if (file.isDirectory && draggedFile && draggedFile.path !== file.path) {
+      setDragOverFolder(file.path);
+      e.dataTransfer.dropEffect = 'move';
+    } else {
+      setDragOverFolder(null);
+      e.dataTransfer.dropEffect = 'none';
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverFolder(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetFolder: any) => {
+    e.preventDefault();
+    setDragOverFolder(null);
+    
+    if (draggedFile && targetFolder.isDirectory && draggedFile.path !== targetFolder.path) {
+      const newPath = `${targetFolder.path}/${draggedFile.name}`;
+      await handleAction('rename', draggedFile.path, newPath);
+    }
+    setDraggedFile(null);
   };
 
   const formatSize = (bytes: number) => {
@@ -285,6 +324,8 @@ export function FileExplorer() {
                     <video controls src={`/api/system/files/serve?path=${encodeURIComponent(selectedFile?.path)}`} className="max-w-full max-h-full" />
                   ) : selectedFile?.name.match(/\.(mp3|wav|ogg)$/i) ? (
                     <audio controls src={`/api/system/files/serve?path=${encodeURIComponent(selectedFile?.path)}`} />
+                  ) : selectedFile?.name.match(/\.pdf$/i) ? (
+                    <iframe src={`/api/system/files/serve?path=${encodeURIComponent(selectedFile?.path)}`} className="w-full h-full border-none bg-white" title={selectedFile?.name} />
                   ) : (
                     <img src={`/api/system/files/serve?path=${encodeURIComponent(selectedFile?.path)}`} alt={selectedFile?.name} className="max-w-full max-h-full object-contain" />
                   )}
@@ -314,9 +355,16 @@ export function FileExplorer() {
               {files.map((file, i) => (
                 <div 
                   key={i} 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, file)}
+                  onDragOver={(e) => handleDragOver(e, file)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, file)}
                   onClick={() => handleItemClick(file)}
                   onContextMenu={(e) => handleContextMenu(e, file)}
-                  className="grid grid-cols-[minmax(200px,1fr)_100px_150px] gap-4 items-center px-2 py-2 hover:bg-blue-600/20 rounded cursor-pointer group"
+                  className={`grid grid-cols-[minmax(200px,1fr)_100px_150px] gap-4 items-center px-2 py-2 rounded cursor-pointer group transition-colors ${
+                    dragOverFolder === file.path ? 'bg-blue-600/40 border-2 border-blue-500' : 'hover:bg-blue-600/20 border-2 border-transparent'
+                  }`}
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
                     {file.isDirectory ? <Folder className="w-5 h-5 text-blue-400 flex-shrink-0" /> : getFileIcon(file.name)}
@@ -349,6 +397,25 @@ export function FileExplorer() {
         >
           {contextMenu.file ? (
             <>
+              <button 
+                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-blue-600 flex items-center gap-2"
+                onClick={() => {
+                  handleItemClick(contextMenu.file);
+                  setContextMenu(null);
+                }}
+              >
+                <Folder className="w-4 h-4" /> Open
+              </button>
+              {!contextMenu.file.isDirectory && (
+                <a 
+                  href={`/api/system/files/serve?path=${encodeURIComponent(contextMenu.file.path)}`}
+                  download={contextMenu.file.name}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-blue-600 flex items-center gap-2"
+                  onClick={() => setContextMenu(null)}
+                >
+                  <Download className="w-4 h-4" /> Download
+                </a>
+              )}
               <button 
                 className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-blue-600 flex items-center gap-2"
                 onClick={() => {

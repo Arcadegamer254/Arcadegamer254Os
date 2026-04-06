@@ -10,13 +10,33 @@ export function AppStore() {
   const [uninstallingPkg, setUninstallingPkg] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSuggestions();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      if (query) {
+        performSearch(query);
+      } else {
+        fetchSuggestions();
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
 
   const fetchSuggestions = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/system/packages/search?q=`);
+      const data = await res.json();
+      setPackages(data.packages || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  const performSearch = async (searchQuery: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/system/packages/search?q=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       setPackages(data.packages || []);
     } catch (e) {
@@ -31,15 +51,7 @@ export function AppStore() {
       fetchSuggestions();
       return;
     }
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/system/packages/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      setPackages(data.packages || []);
-    } catch (e) {
-      console.error(e);
-    }
-    setLoading(false);
+    performSearch(query);
   };
 
   const installPackage = async (pkg: any) => {
