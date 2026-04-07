@@ -1,46 +1,83 @@
 import React, { useEffect } from 'react';
-import { motion } from 'motion/react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, { FadeIn, SlideInDown, useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 
 export function BootScreen({ onComplete }: { onComplete: () => void }) {
+  const progressWidth = useSharedValue(0);
+
   useEffect(() => {
+    progressWidth.value = withTiming(200, { duration: 1500, easing: Easing.inOut(Easing.ease) });
     const timer = setTimeout(() => {
       onComplete();
     }, 3000);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-blue-900 text-white overflow-hidden">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="flex flex-col items-center"
-      >
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-4 drop-shadow-2xl">
-          Arcadegamer254 os
-        </h1>
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="flex items-center space-x-3"
-        >
-          <div className="h-[1px] w-12 bg-white/50" />
-          <p className="text-lg md:text-xl font-medium text-blue-200 uppercase tracking-widest">
-            made by arcadegamer254
-          </p>
-          <div className="h-[1px] w-12 bg-white/50" />
-        </motion.div>
+  const progressStyle = useAnimatedStyle(() => {
+    return {
+      width: progressWidth.value,
+    };
+  });
 
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: "200px" }}
-          transition={{ delay: 1, duration: 1.5, ease: "easeInOut" }}
-          className="h-1 bg-blue-400 mt-12 rounded-full shadow-[0_0_15px_rgba(96,165,250,0.5)]"
-        />
-      </motion.div>
-    </div>
+  return (
+    <View style={styles.container}>
+      <Animated.View 
+        entering={FadeIn.duration(800)}
+        style={styles.content}
+      >
+        <Text style={styles.title}>Arcadegamer254 os</Text>
+        
+        <Animated.View 
+          entering={SlideInDown.delay(600).duration(500)}
+          style={styles.subtitleRow}
+        >
+          <View style={styles.divider} />
+          <Text style={styles.subtitle}>MADE BY ARCADEGAMER254</Text>
+          <View style={styles.divider} />
+        </Animated.View>
+
+        <Animated.View style={[styles.progressBar, progressStyle]} />
+      </Animated.View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#312e81', // indigo-900
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 16,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  divider: {
+    height: 1,
+    width: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#bfdbfe', // blue-200
+    letterSpacing: 2,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#60a5fa', // blue-400
+    marginTop: 48,
+    borderRadius: 2,
+  }
+});

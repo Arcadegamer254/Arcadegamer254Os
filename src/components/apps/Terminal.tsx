@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Terminal as TerminalIcon, Plus, X } from 'lucide-react';
 
 export function Terminal() {
@@ -8,14 +9,9 @@ export function Terminal() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [history]);
-
-  const handleCommand = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCommand = async () => {
     if (!input.trim()) return;
 
     const cmd = input.trim();
@@ -43,46 +39,149 @@ export function Terminal() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#202124] text-gray-100 font-sans overflow-hidden">
+    <View style={styles.container}>
       {/* Chrome OS Terminal Tab Bar */}
-      <div className="flex items-center bg-[#292a2d] h-10 border-b border-black/20 px-2 select-none">
-        <div className="flex items-center bg-[#3c4043] h-8 px-4 rounded-t-md min-w-[150px] max-w-[200px] border-t border-x border-white/10 relative group">
-          <TerminalIcon className="w-4 h-4 text-blue-400 mr-2" />
-          <span className="text-sm text-gray-200 truncate flex-1">penguin</span>
-          <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded-full transition-opacity">
-            <X className="w-3 h-3 text-gray-400" />
-          </button>
-        </div>
-        <button className="w-8 h-8 flex items-center justify-center ml-1 hover:bg-white/10 rounded-full transition-colors text-gray-400">
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
+      <View style={styles.tabBar}>
+        <View style={styles.tab}>
+          <TerminalIcon color="#60a5fa" size={16} style={{ marginRight: 8 }} />
+          <Text style={styles.tabText} numberOfLines={1}>penguin</Text>
+          <TouchableOpacity style={styles.closeButton}>
+            <X color="#9ca3af" size={12} />
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.addButton}>
+          <Plus color="#9ca3af" size={16} />
+        </TouchableOpacity>
+      </View>
 
       {/* Terminal Content */}
-      <div className="flex-1 flex flex-col p-4 font-mono text-[15px] leading-relaxed overflow-hidden">
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5">
+      <View style={styles.content}>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.historyContainer}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        >
           {history.map((line, i) => (
-            <div key={i} className={`whitespace-pre-wrap ${line.type === 'input' ? 'text-gray-100' : 'text-gray-300'}`}>
+            <Text 
+              key={i} 
+              style={[
+                styles.lineText, 
+                line.type === 'input' ? styles.textInput : styles.textOutput
+              ]}
+            >
               {line.text}
-            </div>
+            </Text>
           ))}
-          {loading && <div className="text-gray-500">Executing...</div>}
-          <div ref={bottomRef} />
-        </div>
-        <form onSubmit={handleCommand} className="flex items-center mt-1">
-          <span className="text-green-400 font-bold mr-2">arcadegamer254@penguin:~$</span>
-          <input
-            type="text"
+          {loading && <Text style={styles.textLoading}>Executing...</Text>}
+        </ScrollView>
+        <View style={styles.inputContainer}>
+          <Text style={styles.promptText}>arcadegamer254@penguin:~$ </Text>
+          <TextInput
+            style={styles.textInputBox}
             value={input}
-            onChange={e => setInput(e.target.value)}
-            className="flex-1 bg-transparent outline-none text-gray-100 caret-gray-100"
+            onChangeText={setInput}
+            onSubmitEditing={handleCommand}
             autoFocus
-            disabled={loading}
+            editable={!loading}
+            autoCapitalize="none"
+            autoCorrect={false}
             spellCheck={false}
-            autoComplete="off"
+            blurOnSubmit={false}
           />
-        </form>
-      </div>
-    </div>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#202124',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#292a2d',
+    height: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.2)',
+    paddingHorizontal: 8,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3c4043',
+    height: 32,
+    paddingHorizontal: 16,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    minWidth: 150,
+    maxWidth: 200,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#e5e7eb',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+    borderRadius: 12,
+  },
+  addButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+    borderRadius: 16,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  historyContainer: {
+    flex: 1,
+  },
+  lineText: {
+    fontFamily: 'monospace',
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 2,
+  },
+  textInput: {
+    color: '#f3f4f6',
+  },
+  textOutput: {
+    color: '#d1d5db',
+  },
+  textLoading: {
+    fontFamily: 'monospace',
+    fontSize: 15,
+    color: '#6b7280',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  promptText: {
+    fontFamily: 'monospace',
+    fontSize: 15,
+    color: '#4ade80',
+    fontWeight: 'bold',
+  },
+  textInputBox: {
+    flex: 1,
+    fontFamily: 'monospace',
+    fontSize: 15,
+    color: '#f3f4f6',
+    padding: 0,
+    margin: 0,
+    outlineWidth: 0,
+  },
+});

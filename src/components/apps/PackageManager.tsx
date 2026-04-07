@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Search, Download, Check, Package as PackageIcon } from 'lucide-react';
 
 export function PackageManager() {
@@ -14,8 +15,7 @@ export function PackageManager() {
     if (activeTab === 'installed') fetchInstalled();
   }, [activeTab]);
 
-  const searchPackages = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const searchPackages = async () => {
     if (!query) return;
     setLoading(true);
     try {
@@ -64,102 +64,298 @@ export function PackageManager() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-100">
+    <View style={styles.container}>
       {/* Header / Tabs */}
-      <div className="flex items-center space-x-4 px-6 py-4 bg-gray-900 border-b border-gray-800">
-        <PackageIcon className="w-6 h-6 text-blue-500" />
-        <h1 className="text-lg font-bold mr-8">Pacman GUI</h1>
-        <button 
-          onClick={() => setActiveTab('search')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'search' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}
+      <View style={styles.header}>
+        <PackageIcon color="#3b82f6" size={24} />
+        <Text style={styles.headerTitle}>Pacman GUI</Text>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('search')}
+          style={[styles.tabButton, activeTab === 'search' && styles.activeTabButton]}
         >
-          Discover
-        </button>
-        <button 
-          onClick={() => setActiveTab('installed')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'installed' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}
+          <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>Discover</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('installed')}
+          style={[styles.tabButton, activeTab === 'installed' && styles.activeTabButton]}
         >
-          Installed
-        </button>
-      </div>
+          <Text style={[styles.tabText, activeTab === 'installed' && styles.activeTabText]}>Installed</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <View style={styles.content}>
         {activeTab === 'search' && (
-          <div className="p-6 flex flex-col h-full">
-            <form onSubmit={searchPackages} className="relative mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input 
-                type="text" 
+          <View style={styles.tabContent}>
+            <View style={styles.searchContainer}>
+              <Search color="#9ca3af" size={20} style={styles.searchIcon} />
+              <TextInput 
+                style={styles.searchInput}
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChangeText={setQuery}
+                onSubmitEditing={searchPackages}
                 placeholder="Search Arch Repositories (e.g., firefox, htop)..."
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:border-blue-500 transition-colors"
+                placeholderTextColor="#9ca3af"
               />
-            </form>
+            </View>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <ScrollView style={styles.resultsList}>
               {loading ? (
-                <p className="text-center text-gray-500 mt-10">Searching...</p>
+                <Text style={styles.emptyText}>Searching...</Text>
               ) : searchResults.map((pkg, i) => (
-                <div key={i} className="bg-gray-900 border border-gray-800 p-4 rounded-xl flex items-center justify-between hover:border-gray-700 transition-colors">
-                  <div>
-                    <h3 className="font-bold text-lg">{pkg.name}</h3>
-                    <p className="text-sm text-gray-400 mb-1">{pkg.description}</p>
-                    <span className="text-xs font-mono bg-gray-800 px-2 py-1 rounded text-gray-300">{pkg.version}</span>
-                  </div>
-                  <div>
+                <View key={i} style={styles.listItem}>
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemName}>{pkg.name}</Text>
+                    <Text style={styles.itemDesc} numberOfLines={2}>{pkg.description}</Text>
+                    <View style={styles.versionBadge}>
+                      <Text style={styles.itemVersion}>{pkg.version}</Text>
+                    </View>
+                  </View>
+                  
+                  <View>
                     {pkg.installed ? (
-                      <button disabled className="flex items-center space-x-2 bg-gray-800 text-green-400 px-4 py-2 rounded-lg font-medium cursor-default">
-                        <Check className="w-4 h-4" />
-                        <span>Installed</span>
-                      </button>
+                      <View style={styles.installedBadge}>
+                        <Check color="#4ade80" size={16} />
+                        <Text style={styles.installedText}>Installed</Text>
+                      </View>
                     ) : (
-                      <button 
-                        onClick={() => installPackage(pkg.name)}
+                      <TouchableOpacity 
+                        style={[styles.installButton, installingPkg !== null && styles.disabledButton]}
+                        onPress={() => installPackage(pkg.name)}
                         disabled={installingPkg !== null}
-                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                       >
                         {installingPkg === pkg.name ? (
-                          <span>Installing...</span>
+                          <Text style={styles.installButtonText}>Installing...</Text>
                         ) : (
                           <>
-                            <Download className="w-4 h-4" />
-                            <span>Install</span>
+                            <Download color="#ffffff" size={16} />
+                            <Text style={styles.installButtonText}>Install</Text>
                           </>
                         )}
-                      </button>
+                      </TouchableOpacity>
                     )}
-                  </div>
-                </div>
+                  </View>
+                </View>
               ))}
-            </div>
+            </ScrollView>
 
             {/* Install Log Terminal */}
-            {installLog && (
-              <div className="mt-4 h-48 bg-black border border-gray-800 rounded-xl p-4 font-mono text-xs text-green-400 overflow-y-auto whitespace-pre-wrap">
-                {installLog}
-              </div>
-            )}
-          </div>
+            {installLog ? (
+              <ScrollView style={styles.logContainer}>
+                <Text style={styles.logText}>{installLog}</Text>
+              </ScrollView>
+            ) : null}
+          </View>
         )}
 
         {activeTab === 'installed' && (
-          <div className="p-6 flex flex-col h-full">
-            <h2 className="text-xl font-bold mb-4">Installed Packages ({installedPackages.length})</h2>
-            <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-4 pr-2 content-start">
-              {loading ? (
-                <p className="text-gray-500 col-span-2">Loading installed packages...</p>
-              ) : installedPackages.map((pkg, i) => (
-                <div key={i} className="bg-gray-900 border border-gray-800 p-4 rounded-xl flex items-center justify-between">
-                  <span className="font-medium truncate mr-4">{pkg.name}</span>
-                  <span className="text-xs font-mono text-gray-500 shrink-0">{pkg.version}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <View style={styles.tabContent}>
+            <Text style={styles.installedTitle}>Installed Packages ({installedPackages.length})</Text>
+            <ScrollView style={styles.resultsList}>
+              <View style={styles.grid}>
+                {loading ? (
+                  <Text style={styles.emptyText}>Loading installed packages...</Text>
+                ) : installedPackages.map((pkg, i) => (
+                  <View key={i} style={styles.installedItem}>
+                    <Text style={styles.installedItemName} numberOfLines={1}>{pkg.name}</Text>
+                    <Text style={styles.installedItemVersion}>{pkg.version}</Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#030712', // gray-950
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#111827', // gray-900
+    borderBottomWidth: 1,
+    borderBottomColor: '#1f2937', // gray-800
+    gap: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#f3f4f6',
+    marginRight: 32,
+  },
+  tabButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  activeTabButton: {
+    backgroundColor: '#1f2937',
+  },
+  tabText: {
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: '#ffffff',
+  },
+  content: {
+    flex: 1,
+  },
+  tabContent: {
+    flex: 1,
+    padding: 24,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    borderRadius: 12,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    height: 56,
+    fontSize: 18,
+    color: '#f3f4f6',
+    outlineWidth: 0,
+  },
+  resultsList: {
+    flex: 1,
+  },
+  emptyText: {
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 16,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  itemInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  itemName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#dbeafe',
+    marginBottom: 4,
+  },
+  itemDesc: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginBottom: 8,
+  },
+  versionBadge: {
+    backgroundColor: '#1f2937',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  itemVersion: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#d1d5db',
+  },
+  installedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1f2937',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  installedText: {
+    color: '#4ade80',
+    fontWeight: '500',
+  },
+  installButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  installButtonText: {
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  logContainer: {
+    height: 192,
+    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  logText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#4ade80',
+  },
+  installedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#f3f4f6',
+    marginBottom: 16,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  installedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    padding: 16,
+    borderRadius: 12,
+    width: '48%',
+    minWidth: 200,
+  },
+  installedItemName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#f3f4f6',
+    flex: 1,
+    marginRight: 16,
+  },
+  installedItemVersion: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#6b7280',
+  },
+});

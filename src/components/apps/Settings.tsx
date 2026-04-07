@@ -1,10 +1,51 @@
 import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Switch, PanResponder, Dimensions, Platform } from 'react-native';
 import { 
   Info, Monitor, Volume2, Battery, HardDrive, Wifi, Bluetooth, 
   Palette, Image as ImageIcon, LayoutGrid, Clock, Globe, 
   AppWindow, PlayCircle, Lock, Shield, Search, ChevronRight,
   Cpu, Activity, Type, CheckCircle, WifiOff, Sun, Moon
 } from 'lucide-react';
+
+const { width } = Dimensions.get('window');
+
+// Simple Slider Component
+const Slider = ({ value, onValueChange, min = 0, max = 100 }: { value: number, onValueChange: (val: number) => void, min?: number, max?: number }) => {
+  const [sliderWidth, setSliderWidth] = useState(0);
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      handleTouch(evt.nativeEvent.locationX);
+    },
+    onPanResponderMove: (evt) => {
+      handleTouch(evt.nativeEvent.locationX);
+    },
+  });
+
+  const handleTouch = (x: number) => {
+    if (sliderWidth === 0) return;
+    let percent = x / sliderWidth;
+    percent = Math.max(0, Math.min(1, percent));
+    const newValue = min + percent * (max - min);
+    onValueChange(newValue);
+  };
+
+  const percent = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+
+  return (
+    <View 
+      style={styles.sliderContainer} 
+      onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
+      {...panResponder.panHandlers}
+    >
+      <View style={styles.sliderTrack}>
+        <View style={[styles.sliderFill, { width: `${percent}%` }]} />
+      </View>
+    </View>
+  );
+};
 
 type Category = {
   id: string;
@@ -91,50 +132,52 @@ export function Settings() {
     let interval: any;
 
     const fetchData = async () => {
-      if (activeTab === 'about' && !aboutData) {
-        fetch('/api/system/about').then(r => r.json()).then(setAboutData);
-      }
-      if (activeTab === 'storage' && !storageData) {
-        fetch('/api/system/storage').then(r => r.json()).then(setStorageData);
-      }
-      if (activeTab === 'display' && !displayData) {
-        fetch('/api/system/display').then(r => r.json()).then(setDisplayData);
-      }
-      if (['appearance', 'wallpaper', 'fonts', 'dock'].includes(activeTab) && !persData) {
-        fetch('/api/system/personalization').then(r => r.json()).then(setPersData);
-      }
-      if (activeTab === 'datetime' && !dateTimeData) {
-        fetch('/api/system/datetime').then(r => r.json()).then(setDateTimeData);
-      }
-      if (activeTab === 'region' && !regionData) {
-        fetch('/api/system/region').then(r => r.json()).then(setRegionData);
-      }
-      if (activeTab === 'defaultapps' && !defaultAppsData) {
-        fetch('/api/system/defaultapps').then(r => r.json()).then(setDefaultAppsData);
-      }
-      if (activeTab === 'startup' && !startupData) {
-        fetch('/api/system/startup').then(r => r.json()).then(setStartupData);
-      }
-      if (activeTab === 'permissions' && !permissionsData) {
-        fetch('/api/system/permissions').then(r => r.json()).then(setPermissionsData);
-      }
-      if (activeTab === 'lockscreen' && !lockScreenData) {
-        fetch('/api/system/lockscreen').then(r => r.json()).then(setLockScreenData);
-      }
+      try {
+        if (activeTab === 'about' && !aboutData) {
+          fetch('/api/system/about').then(r => r.json()).then(setAboutData).catch(()=>{});
+        }
+        if (activeTab === 'storage' && !storageData) {
+          fetch('/api/system/storage').then(r => r.json()).then(setStorageData).catch(()=>{});
+        }
+        if (activeTab === 'display' && !displayData) {
+          fetch('/api/system/display').then(r => r.json()).then(setDisplayData).catch(()=>{});
+        }
+        if (['appearance', 'wallpaper', 'fonts', 'dock'].includes(activeTab) && !persData) {
+          fetch('/api/system/personalization').then(r => r.json()).then(setPersData).catch(()=>{});
+        }
+        if (activeTab === 'datetime' && !dateTimeData) {
+          fetch('/api/system/datetime').then(r => r.json()).then(setDateTimeData).catch(()=>{});
+        }
+        if (activeTab === 'region' && !regionData) {
+          fetch('/api/system/region').then(r => r.json()).then(setRegionData).catch(()=>{});
+        }
+        if (activeTab === 'defaultapps' && !defaultAppsData) {
+          fetch('/api/system/defaultapps').then(r => r.json()).then(setDefaultAppsData).catch(()=>{});
+        }
+        if (activeTab === 'startup' && !startupData) {
+          fetch('/api/system/startup').then(r => r.json()).then(setStartupData).catch(()=>{});
+        }
+        if (activeTab === 'permissions' && !permissionsData) {
+          fetch('/api/system/permissions').then(r => r.json()).then(setPermissionsData).catch(()=>{});
+        }
+        if (activeTab === 'lockscreen' && !lockScreenData) {
+          fetch('/api/system/lockscreen').then(r => r.json()).then(setLockScreenData).catch(()=>{});
+        }
 
-      // Real-time polling for these tabs
-      if (activeTab === 'bluetooth') {
-        fetch('/api/system/bluetooth').then(r => r.json()).then(setBtData);
-      }
-      if (activeTab === 'power') {
-        fetch('/api/system/power').then(r => r.json()).then(setPowerData);
-      }
-      if (activeTab === 'wifi') {
-        fetch('/api/system/wifi').then(r => r.json()).then(setWifiData);
-      }
-      if (activeTab === 'audio') {
-        fetch('/api/system/audio').then(r => r.json()).then(setAudioData);
-      }
+        // Real-time polling for these tabs
+        if (activeTab === 'bluetooth') {
+          fetch('/api/system/bluetooth').then(r => r.json()).then(setBtData).catch(()=>{});
+        }
+        if (activeTab === 'power') {
+          fetch('/api/system/power').then(r => r.json()).then(setPowerData).catch(()=>{});
+        }
+        if (activeTab === 'wifi') {
+          fetch('/api/system/wifi').then(r => r.json()).then(setWifiData).catch(()=>{});
+        }
+        if (activeTab === 'audio') {
+          fetch('/api/system/audio').then(r => r.json()).then(setAudioData).catch(()=>{});
+        }
+      } catch (e) {}
     };
 
     fetchData();
@@ -148,399 +191,392 @@ export function Settings() {
 
   const updatePers = async (updates: any) => {
     setPersData({ ...persData, ...updates });
-    await fetch('/api/system/personalization', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    });
-    window.dispatchEvent(new Event('pers-updated'));
+    try {
+      await fetch('/api/system/personalization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (Platform.OS === 'web') {
+        window.dispatchEvent(new Event('pers-updated'));
+      }
+    } catch (e) {}
   };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'about':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center space-x-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl shadow-lg flex items-center justify-center border border-white/10">
-                <Info className="w-12 h-12 text-white" />
-              </div>
-              <div>
-                <h2 className="text-4xl font-bold tracking-tight text-white">Arcadegamer254 os</h2>
-                <p className="text-blue-300 font-medium mt-1">Version {aboutData?.version || 'Loading...'}</p>
-              </div>
-            </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.headerRow}>
+              <View style={styles.logoContainer}>
+                <Info color="#fff" size={48} />
+              </View>
+              <View>
+                <Text style={styles.titleText}>Arcadegamer254 os</Text>
+                <Text style={styles.subtitleText}>Version {aboutData?.version || 'Loading...'}</Text>
+              </View>
+            </View>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Cpu className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-lg font-semibold text-white">Processor</h3>
-                </div>
-                <p className="text-gray-300 font-mono text-sm">{aboutData?.cpu || 'Loading...'}</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <HardDrive className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-lg font-semibold text-white">Installed RAM</h3>
-                </div>
-                <p className="text-gray-300 font-mono">{aboutData?.ram || 'Loading...'}</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Activity className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-lg font-semibold text-white">Kernel Version</h3>
-                </div>
-                <p className="text-gray-300 font-mono">{aboutData?.kernel || 'Loading...'}</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Clock className="w-5 h-5 text-green-400" />
-                  <h3 className="text-lg font-semibold text-white">System Uptime</h3>
-                </div>
-                <p className="text-gray-300 font-mono">{aboutData?.uptime || 'Loading...'}</p>
-              </div>
-            </div>
-          </div>
+            <View style={styles.gridContainer}>
+              <View style={styles.gridItem}>
+                <View style={styles.gridItemHeader}>
+                  <Cpu color="#60a5fa" size={20} />
+                  <Text style={styles.gridItemTitle}>Processor</Text>
+                </View>
+                <Text style={styles.gridItemValue}>{aboutData?.cpu || 'Loading...'}</Text>
+              </View>
+              <View style={styles.gridItem}>
+                <View style={styles.gridItemHeader}>
+                  <HardDrive color="#c084fc" size={20} />
+                  <Text style={styles.gridItemTitle}>Installed RAM</Text>
+                </View>
+                <Text style={styles.gridItemValue}>{aboutData?.ram || 'Loading...'}</Text>
+              </View>
+              <View style={styles.gridItem}>
+                <View style={styles.gridItemHeader}>
+                  <Activity color="#c084fc" size={20} />
+                  <Text style={styles.gridItemTitle}>Kernel Version</Text>
+                </View>
+                <Text style={styles.gridItemValue}>{aboutData?.kernel || 'Loading...'}</Text>
+              </View>
+              <View style={styles.gridItem}>
+                <View style={styles.gridItemHeader}>
+                  <Clock color="#4ade80" size={20} />
+                  <Text style={styles.gridItemTitle}>System Uptime</Text>
+                </View>
+                <Text style={styles.gridItemValue}>{aboutData?.uptime || 'Loading...'}</Text>
+              </View>
+            </View>
+          </View>
         );
 
       case 'storage':
         const percentage = storageData ? parseInt(storageData.usePercentage) : 0;
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Storage</h2>
-              <p className="text-gray-400">Manage your disk space and partitions.</p>
-            </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Storage</Text>
+              <Text style={styles.sectionSubtitle}>Manage your disk space and partitions.</Text>
+            </View>
 
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
-                  <HardDrive className="w-8 h-8 text-blue-400" />
-                  <div>
-                    <h3 className="text-xl font-semibold text-white">Root Partition (/)</h3>
-                    <p className="text-gray-400 text-sm">Arch Linux System Drive</p>
-                  </div>
-                </div>
-                <div className="text-right">
+            <View style={styles.card}>
+              <View style={styles.storageHeader}>
+                <View style={styles.storageInfo}>
+                  <HardDrive color="#60a5fa" size={32} />
+                  <View style={{ marginLeft: 16 }}>
+                    <Text style={styles.cardTitle}>Root Partition (/)</Text>
+                    <Text style={styles.cardSubtitle}>Arch Linux System Drive</Text>
+                  </View>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
                   {storageData?.error ? (
-                    <p className="text-red-400 text-sm">{storageData.error}</p>
+                    <Text style={styles.errorText}>{storageData.error}</Text>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-white">{storageData?.used || '0G'} <span className="text-gray-500 text-lg font-normal">used</span></p>
-                      <p className="text-sm text-gray-400">{storageData?.available || '0G'} free of {storageData?.total || '0G'}</p>
+                      <Text style={styles.storageUsedText}>{storageData?.used || '0G'} <Text style={styles.storageUsedLabel}>used</Text></Text>
+                      <Text style={styles.storageFreeText}>{storageData?.available || '0G'} free of {storageData?.total || '0G'}</Text>
                     </>
                   )}
-                </div>
-              </div>
+                </View>
+              </View>
 
-              <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000 ease-out"
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-              <div className="flex justify-between mt-2 text-xs font-mono text-gray-500">
-                <span>0%</span>
-                <span>{percentage}% Used</span>
-                <span>100%</span>
-              </div>
-            </div>
-          </div>
+              <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBarFill, { width: `${percentage}%` }]} />
+              </View>
+              <View style={styles.progressLabels}>
+                <Text style={styles.progressLabel}>0%</Text>
+                <Text style={styles.progressLabel}>{percentage}% Used</Text>
+                <Text style={styles.progressLabel}>100%</Text>
+              </View>
+            </View>
+          </View>
         );
 
       case 'display':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Display</h2>
-              <p className="text-gray-400">Configure your monitors and resolution.</p>
-            </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Display</Text>
+              <Text style={styles.sectionSubtitle}>Configure your monitors and resolution.</Text>
+            </View>
 
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <Monitor className="w-8 h-8 text-blue-400" />
-                <div>
-                  <h3 className="text-xl font-semibold text-white">Primary Display</h3>
-                  <p className="text-gray-400 text-sm">Built-in Screen</p>
-                </div>
-              </div>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Monitor color="#60a5fa" size={32} />
+                <View style={{ marginLeft: 16 }}>
+                  <Text style={styles.cardTitle}>Primary Display</Text>
+                  <Text style={styles.cardSubtitle}>Built-in Screen</Text>
+                </View>
+              </View>
 
               {displayData?.error ? (
-                <div className="text-red-400 text-sm">{displayData.error}</div>
+                <Text style={styles.errorText}>{displayData.error}</Text>
               ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Resolution</label>
-                    <div className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white">
-                      {displayData?.resolution || 'Unknown'}
-                    </div>
-                  </div>
+                <View style={styles.formGroup}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Resolution</Text>
+                    <View style={styles.inputField}>
+                      <Text style={styles.inputText}>{displayData?.resolution || 'Unknown'}</Text>
+                    </View>
+                  </View>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Refresh Rate</label>
-                    <div className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white">
-                      {displayData?.refreshRate || 'Unknown'}
-                    </div>
-                  </div>
-                </div>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Refresh Rate</Text>
+                    <View style={styles.inputField}>
+                      <Text style={styles.inputText}>{displayData?.refreshRate || 'Unknown'}</Text>
+                    </View>
+                  </View>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'audio':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Audio</h2>
-              <p className="text-gray-400">Manage sound devices and volume.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <Volume2 className="w-8 h-8 text-blue-400" />
-                <div>
-                  <h3 className="text-xl font-semibold text-white">Master Volume</h3>
-                  <p className="text-gray-400 text-sm">Default Output Device {audioData?.system ? `(${audioData.system})` : ''}</p>
-                </div>
-              </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Audio</Text>
+              <Text style={styles.sectionSubtitle}>Manage sound devices and volume.</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Volume2 color="#60a5fa" size={32} />
+                <View style={{ marginLeft: 16 }}>
+                  <Text style={styles.cardTitle}>Master Volume</Text>
+                  <Text style={styles.cardSubtitle}>Default Output Device {audioData?.system ? `(${audioData.system})` : ''}</Text>
+                </View>
+              </View>
               
               {audioData?.error ? (
-                <div className="text-red-400 text-sm">{audioData.error}</div>
+                <Text style={styles.errorText}>{audioData.error}</Text>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <Volume2 className="w-5 h-5 text-gray-400" />
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      value={audioData?.volume || 0}
-                      onChange={(e) => {
-                        const vol = parseInt(e.target.value);
-                        setAudioData({ ...audioData, volume: vol });
-                        fetch('/api/system/audio', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ volume: vol })
-                        });
-                      }}
-                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                    />
-                    <span className="text-white font-mono w-8">{audioData?.volume || 0}%</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      checked={audioData?.muted || false}
-                      onChange={(e) => {
-                        const muted = e.target.checked;
+                <View style={styles.formGroup}>
+                  <View style={styles.sliderRow}>
+                    <Volume2 color="#9ca3af" size={20} />
+                    <View style={{ flex: 1, marginHorizontal: 16 }}>
+                      <Slider 
+                        value={audioData?.volume || 0} 
+                        onValueChange={(vol) => {
+                          setAudioData({ ...audioData, volume: Math.round(vol) });
+                          fetch('/api/system/audio', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ volume: Math.round(vol) })
+                          }).catch(()=>{});
+                        }} 
+                      />
+                    </View>
+                    <Text style={styles.sliderValueText}>{Math.round(audioData?.volume || 0)}%</Text>
+                  </View>
+                  <View style={styles.switchRow}>
+                    <Switch 
+                      value={audioData?.muted || false}
+                      onValueChange={(muted) => {
                         setAudioData({ ...audioData, muted });
                         fetch('/api/system/audio', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ muted })
-                        });
+                        }).catch(()=>{});
                       }}
-                      className="rounded bg-black/50 border-white/20 text-blue-500 focus:ring-blue-500"
+                      trackColor={{ false: '#4b5563', true: '#3b82f6' }}
+                      thumbColor="#fff"
                     />
-                    <label className="text-sm text-gray-300">Mute</label>
-                  </div>
-                </div>
+                    <Text style={styles.switchLabel}>Mute</Text>
+                  </View>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'wifi':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Wi-Fi</h2>
-              <p className="text-gray-400">Manage wireless networks.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
-                  <Wifi className="w-8 h-8 text-blue-400" />
-                  <div>
-                    <h3 className="text-xl font-semibold text-white">Wi-Fi</h3>
-                    <p className="text-gray-400 text-sm">{wifiData?.enabled ? (wifiData?.networks?.length ? 'Connected' : 'Scanning...') : 'Disabled'}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => {
-                    const enabled = !wifiData?.enabled;
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Wi-Fi</Text>
+              <Text style={styles.sectionSubtitle}>Manage wireless networks.</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardHeader}>
+                  <Wifi color="#60a5fa" size={32} />
+                  <View style={{ marginLeft: 16 }}>
+                    <Text style={styles.cardTitle}>Wi-Fi</Text>
+                    <Text style={styles.cardSubtitle}>{wifiData?.enabled ? (wifiData?.networks?.length ? 'Connected' : 'Scanning...') : 'Disabled'}</Text>
+                  </View>
+                </View>
+                <Switch 
+                  value={wifiData?.enabled || false}
+                  onValueChange={(enabled) => {
                     setWifiData({ ...wifiData, enabled });
                     fetch('/api/system/wifi/toggle', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ enabled })
-                    });
+                    }).catch(()=>{});
                   }}
-                  className={`w-12 h-6 rounded-full transition-colors relative ${wifiData?.enabled ? 'bg-blue-500' : 'bg-gray-600'}`}
-                >
-                  <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${wifiData?.enabled ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
+                  trackColor={{ false: '#4b5563', true: '#3b82f6' }}
+                  thumbColor="#fff"
+                />
+              </View>
               
               {wifiData?.enabled && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Available Networks</h4>
+                <View style={styles.listContainer}>
+                  <Text style={styles.listTitle}>Available Networks</Text>
                   {wifiData?.error ? (
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3 text-red-400">
-                      <WifiOff className="w-5 h-5" />
-                      <span>{wifiData.error}</span>
-                    </div>
+                    <View style={styles.errorBox}>
+                      <WifiOff color="#f87171" size={20} />
+                      <Text style={styles.errorBoxText}>{wifiData.error}</Text>
+                    </View>
                   ) : wifiData?.networks?.map((net: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
-                      <div>
-                        <p className="font-medium text-white">{net.ssid}</p>
-                        <p className="text-xs text-gray-500">{net.security}</p>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Wifi className={`w-5 h-5 ${net.signal > 70 ? 'text-green-400' : net.signal > 30 ? 'text-yellow-400' : 'text-red-400'}`} />
-                        <button 
-                          onClick={() => {
+                    <View key={i} style={styles.listItem}>
+                      <View>
+                        <Text style={styles.listItemTitle}>{net.ssid}</Text>
+                        <Text style={styles.listItemSubtitle}>{net.security}</Text>
+                      </View>
+                      <View style={styles.listItemActions}>
+                        <Wifi color={net.signal > 70 ? '#4ade80' : net.signal > 30 ? '#facc15' : '#f87171'} size={20} />
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => {
                             fetch('/api/system/wifi/connect', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ ssid: net.ssid })
-                            });
+                            }).catch(()=>{});
                           }}
-                          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
                         >
-                          Connect
-                        </button>
-                      </div>
-                    </div>
+                          <Text style={styles.actionButtonText}>Connect</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   ))}
-                </div>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'bluetooth':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Bluetooth</h2>
-              <p className="text-gray-400">Manage wireless devices and connections.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
-                  <Bluetooth className="w-8 h-8 text-blue-400" />
-                  <div>
-                    <h3 className="text-xl font-semibold text-white">Bluetooth</h3>
-                    <p className="text-gray-400 text-sm">{btData?.enabled ? 'Discoverable as "Arcadegamer254-PC"' : 'Disabled'}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => {
-                    const enabled = !btData?.enabled;
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Bluetooth</Text>
+              <Text style={styles.sectionSubtitle}>Manage wireless devices and connections.</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardHeader}>
+                  <Bluetooth color="#60a5fa" size={32} />
+                  <View style={{ marginLeft: 16 }}>
+                    <Text style={styles.cardTitle}>Bluetooth</Text>
+                    <Text style={styles.cardSubtitle}>{btData?.enabled ? 'Discoverable as "Arcadegamer254-PC"' : 'Disabled'}</Text>
+                  </View>
+                </View>
+                <Switch 
+                  value={btData?.enabled || false}
+                  onValueChange={(enabled) => {
                     setBtData({ ...btData, enabled });
                     fetch('/api/system/bluetooth/toggle', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ enabled })
-                    });
+                    }).catch(()=>{});
                   }}
-                  className={`w-12 h-6 rounded-full transition-colors relative ${btData?.enabled ? 'bg-blue-500' : 'bg-gray-600'}`}
-                >
-                  <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${btData?.enabled ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
+                  trackColor={{ false: '#4b5563', true: '#3b82f6' }}
+                  thumbColor="#fff"
+                />
+              </View>
               
               {btData?.enabled && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Paired Devices</h4>
+                <View style={styles.listContainer}>
+                  <Text style={styles.listTitle}>Paired Devices</Text>
                   {btData?.devices?.map((dev: any) => (
-                    <div key={dev.mac} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
-                      <div>
-                        <p className="font-medium text-white">{dev.name}</p>
-                        <p className="text-xs text-gray-500 font-mono">{dev.mac}</p>
-                      </div>
-                      <button 
-                        onClick={() => {
+                    <View key={dev.mac} style={styles.listItem}>
+                      <View>
+                        <Text style={styles.listItemTitle}>{dev.name}</Text>
+                        <Text style={[styles.listItemSubtitle, { fontFamily: 'monospace' }]}>{dev.mac}</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.actionButton}
+                        onPress={() => {
                           fetch('/api/system/bluetooth/connect', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ mac: dev.mac })
-                          });
+                          }).catch(()=>{});
                         }}
-                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
                       >
-                        Connect
-                      </button>
-                    </div>
+                        <Text style={styles.actionButtonText}>Connect</Text>
+                      </TouchableOpacity>
+                    </View>
                   ))}
-                </div>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'power':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Power & Battery</h2>
-              <p className="text-gray-400">Monitor battery health and power usage.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col items-center justify-center py-10">
-                <Battery className="w-16 h-16 text-green-400 mb-4" />
-                <h3 className="text-5xl font-bold text-white mb-2">{powerData?.capacity || '0'}%</h3>
-                <p className="text-gray-400">{powerData?.status || 'Unknown'}</p>
-              </div>
-              <div className="space-y-6">
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-                  <h4 className="text-sm font-medium text-gray-400 mb-1">Battery Health</h4>
-                  <p className="text-2xl font-semibold text-white">{powerData?.health || 'Unknown'}</p>
-                </div>
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-                  <h4 className="text-sm font-medium text-gray-400 mb-1">Power Mode</h4>
-                  <select className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none mt-2">
-                    <option>Balanced</option>
-                    <option>Power Saver</option>
-                    <option>Performance</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Power & Battery</Text>
+              <Text style={styles.sectionSubtitle}>Monitor battery health and power usage.</Text>
+            </View>
+            <View style={styles.gridContainer}>
+              <View style={[styles.card, { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }]}>
+                <Battery color="#4ade80" size={64} style={{ marginBottom: 16 }} />
+                <Text style={{ fontSize: 48, fontWeight: 'bold', color: '#fff', marginBottom: 8 }}>{powerData?.capacity || '0'}%</Text>
+                <Text style={{ color: '#9ca3af' }}>{powerData?.status || 'Unknown'}</Text>
+              </View>
+              <View style={{ gap: 24 }}>
+                <View style={styles.card}>
+                  <Text style={styles.inputLabel}>Battery Health</Text>
+                  <Text style={{ fontSize: 24, fontWeight: '600', color: '#fff' }}>{powerData?.health || 'Unknown'}</Text>
+                </View>
+                <View style={styles.card}>
+                  <Text style={styles.inputLabel}>Power Mode</Text>
+                  <View style={styles.inputField}>
+                    <Text style={styles.inputText}>Balanced</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
         );
 
       case 'appearance':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Appearance</h2>
-              <p className="text-gray-400">Customize the look and feel of your system.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              <h3 className="text-xl font-semibold text-white">System Theme</h3>
-              <div className="flex items-center justify-between bg-white/5 border border-white/10 p-4 rounded-xl">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-xl ${persData?.theme === 'light' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                    {persData?.theme === 'light' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-                  </div>
-                  <div>
-                    <p className="font-medium text-white text-lg">{persData?.theme === 'light' ? 'Light Mode' : 'Dark Mode'}</p>
-                    <p className="text-sm text-gray-400">Switch between light and dark themes</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => updatePers({ theme: persData?.theme === 'light' ? 'dark' : 'light' })}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${persData?.theme === 'light' ? 'bg-blue-500' : 'bg-gray-600'}`}
-                >
-                  <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${persData?.theme === 'light' ? 'translate-x-7' : 'translate-x-1'}`} />
-                </button>
-              </div>
-            </div>
-          </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Appearance</Text>
+              <Text style={styles.sectionSubtitle}>Customize the look and feel of your system.</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>System Theme</Text>
+              <View style={styles.themeRow}>
+                <View style={styles.themeInfo}>
+                  <View style={[styles.themeIconContainer, persData?.theme === 'light' ? { backgroundColor: 'rgba(234, 179, 8, 0.2)' } : { backgroundColor: 'rgba(59, 130, 246, 0.2)' }]}>
+                    {persData?.theme === 'light' ? <Sun color="#facc15" size={24} /> : <Moon color="#60a5fa" size={24} />}
+                  </View>
+                  <View style={{ marginLeft: 16 }}>
+                    <Text style={styles.themeTitle}>{persData?.theme === 'light' ? 'Light Mode' : 'Dark Mode'}</Text>
+                    <Text style={styles.themeSubtitle}>Switch between light and dark themes</Text>
+                  </View>
+                </View>
+                <Switch 
+                  value={persData?.theme === 'dark'}
+                  onValueChange={() => updatePers({ theme: persData?.theme === 'light' ? 'dark' : 'light' })}
+                  trackColor={{ false: '#4b5563', true: '#3b82f6' }}
+                  thumbColor="#fff"
+                />
+              </View>
+            </View>
+          </View>
         );
 
       case 'wallpaper':
@@ -557,330 +593,697 @@ export function Settings() {
           'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2000&auto=format&fit=crop'
         ];
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Wallpaper</h2>
-              <p className="text-gray-400">Choose your desktop background.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Wallpaper</Text>
+              <Text style={styles.sectionSubtitle}>Choose your desktop background.</Text>
+            </View>
+            <View style={styles.wallpaperGrid}>
               {wallpapers.map((wp, i) => (
-                <button 
+                <TouchableOpacity 
                   key={i}
-                  onClick={() => updatePers({ wallpaper: wp })}
-                  className={`relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${persData?.wallpaper === wp ? 'border-blue-500 scale-[1.02] shadow-lg shadow-blue-500/20' : 'border-transparent hover:border-white/20'}`}
+                  onPress={() => updatePers({ wallpaper: wp })}
+                  style={[styles.wallpaperItem, persData?.wallpaper === wp && styles.wallpaperItemSelected]}
                 >
-                  <img src={wp} alt={`Wallpaper ${i+1}`} className="w-full h-full object-cover" />
+                  <Image source={{ uri: wp }} style={styles.wallpaperImage} />
                   {persData?.wallpaper === wp && (
-                    <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
+                    <View style={styles.wallpaperCheck}>
+                      <CheckCircle color="#fff" size={16} />
+                    </View>
                   )}
-                </button>
+                </TouchableOpacity>
               ))}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'fonts':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Fonts</h2>
-              <p className="text-gray-400">Configure system typography.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Interface Font</label>
-                <select 
-                  value={persData?.font || 'Inter'}
-                  onChange={(e) => updatePers({ font: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                >
-                  <option>Inter</option>
-                  <option>Roboto</option>
-                  <option>Open Sans</option>
-                  <option>System Default</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Font Size ({persData?.fontSize || 14}px)</label>
-                <input 
-                  type="range" 
-                  min="12" 
-                  max="24" 
-                  value={persData?.fontSize || 14}
-                  onChange={(e) => updatePers({ fontSize: parseInt(e.target.value) })}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Fonts</Text>
+              <Text style={styles.sectionSubtitle}>Configure system typography.</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Interface Font</Text>
+                <View style={styles.inputField}>
+                  <Text style={styles.inputText}>{persData?.font || 'Inter'}</Text>
+                </View>
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Font Size ({persData?.fontSize || 14}px)</Text>
+                <Slider 
+                  value={persData?.fontSize || 14} 
+                  min={12} 
+                  max={24} 
+                  onValueChange={(val) => updatePers({ fontSize: Math.round(val) })} 
                 />
-              </div>
-            </div>
-          </div>
+              </View>
+            </View>
+          </View>
         );
 
       case 'datetime':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Date & Time</h2>
-              <p className="text-gray-400">Configure system time and timezone.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              {dateTimeData?.error ? (
-                <div className="text-red-400 text-sm">{dateTimeData.error}</div>
-              ) : (
-                <pre className="text-gray-300 font-mono text-sm whitespace-pre-wrap">
-                  {dateTimeData?.raw || 'Loading...'}
-                </pre>
-              )}
-            </div>
-          </div>
-        );
-
       case 'region':
+        const data = activeTab === 'datetime' ? dateTimeData : regionData;
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Region & Language</h2>
-              <p className="text-gray-400">Configure system locale and keyboard layout.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              {regionData?.error ? (
-                <div className="text-red-400 text-sm">{regionData.error}</div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{activeTab === 'datetime' ? 'Date & Time' : 'Region & Language'}</Text>
+              <Text style={styles.sectionSubtitle}>{activeTab === 'datetime' ? 'Configure system time and timezone.' : 'Configure system locale and keyboard layout.'}</Text>
+            </View>
+            <View style={styles.card}>
+              {data?.error ? (
+                <Text style={styles.errorText}>{data.error}</Text>
               ) : (
-                <pre className="text-gray-300 font-mono text-sm whitespace-pre-wrap">
-                  {regionData?.raw || 'Loading...'}
-                </pre>
+                <ScrollView style={styles.codeViewer}>
+                  <Text style={styles.codeText}>{data?.raw || 'Loading...'}</Text>
+                </ScrollView>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'defaultapps':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Default Apps</h2>
-              <p className="text-gray-400">Choose default applications for file types.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Default Apps</Text>
+              <Text style={styles.sectionSubtitle}>Choose default applications for file types.</Text>
+            </View>
+            <View style={styles.card}>
               {defaultAppsData?.error ? (
-                <div className="text-red-400 text-sm">{defaultAppsData.error}</div>
+                <Text style={styles.errorText}>{defaultAppsData.error}</Text>
               ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Web Browser</label>
-                    <div className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white">
-                      {defaultAppsData?.browser || 'Not set'}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">HTTP Handler</label>
-                    <div className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white">
-                      {defaultAppsData?.urlScheme || 'Not set'}
-                    </div>
-                  </div>
-                </div>
+                <View style={styles.formGroup}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Web Browser</Text>
+                    <View style={styles.inputField}>
+                      <Text style={styles.inputText}>{defaultAppsData?.browser || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>HTTP Handler</Text>
+                    <View style={styles.inputField}>
+                      <Text style={styles.inputText}>{defaultAppsData?.urlScheme || 'Not set'}</Text>
+                    </View>
+                  </View>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'startup':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Startup Apps</h2>
-              <p className="text-gray-400">Manage applications that start automatically.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Startup Apps</Text>
+              <Text style={styles.sectionSubtitle}>Manage applications that start automatically.</Text>
+            </View>
+            <View style={styles.card}>
               {startupData?.error ? (
-                <div className="text-red-400 text-sm">{startupData.error}</div>
+                <Text style={styles.errorText}>{startupData.error}</Text>
               ) : startupData?.apps?.length === 0 ? (
-                <p className="text-gray-400 text-sm">No startup applications found.</p>
+                <Text style={styles.emptyText}>No startup applications found.</Text>
               ) : (
-                <div className="space-y-2">
+                <View style={styles.listContainer}>
                   {startupData?.apps?.map((app: string, i: number) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5">
-                      <span className="font-medium text-white">{app}</span>
-                      <div className="w-10 h-5 bg-blue-500 rounded-full relative">
-                        <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-5" />
-                      </div>
-                    </div>
+                    <View key={i} style={styles.listItem}>
+                      <Text style={styles.listItemTitle}>{app}</Text>
+                      <Switch value={true} onValueChange={() => {}} trackColor={{ true: '#3b82f6' }} thumbColor="#fff" />
+                    </View>
                   ))}
-                </div>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'permissions':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">App Permissions</h2>
-              <p className="text-gray-400">Manage granular permissions for sandboxed apps.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>App Permissions</Text>
+              <Text style={styles.sectionSubtitle}>Manage granular permissions for sandboxed apps.</Text>
+            </View>
+            <View style={styles.card}>
               {permissionsData?.error ? (
-                <div className="text-gray-400 text-sm">{permissionsData.error}</div>
+                <Text style={styles.errorText}>{permissionsData.error}</Text>
               ) : (
                 <>
-                  <p className="text-sm text-blue-400">{permissionsData?.note}</p>
-                  <div className="space-y-2">
+                  <Text style={{ color: '#60a5fa', fontSize: 14, marginBottom: 16 }}>{permissionsData?.note}</Text>
+                  <View style={styles.listContainer}>
                     {permissionsData?.apps?.map((app: string, i: number) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5">
-                        <span className="font-medium text-white">{app}</span>
-                        <button className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded-lg">Manage</button>
-                      </div>
+                      <View key={i} style={styles.listItem}>
+                        <Text style={styles.listItemTitle}>{app}</Text>
+                        <TouchableOpacity style={styles.actionButton}>
+                          <Text style={styles.actionButtonText}>Manage</Text>
+                        </TouchableOpacity>
+                      </View>
                     ))}
-                  </div>
+                  </View>
                 </>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         );
 
       case 'lockscreen':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Lock Screen</h2>
-              <p className="text-gray-400">Configure screen lock and timeout.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              <p className="text-gray-300 text-sm">{lockScreenData?.status || 'Loading...'}</p>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Screen Timeout</label>
-                <select className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none appearance-none">
-                  <option>5 minutes</option>
-                  <option>10 minutes</option>
-                  <option>15 minutes</option>
-                  <option>Never</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Lock Screen</Text>
+              <Text style={styles.sectionSubtitle}>Configure screen lock and timeout.</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 16 }}>{lockScreenData?.status || 'Loading...'}</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Screen Timeout</Text>
+                <View style={styles.inputField}>
+                  <Text style={styles.inputText}>5 minutes</Text>
+                </View>
+              </View>
+            </View>
+          </View>
         );
 
       case 'dock':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Dock Settings</h2>
-              <p className="text-gray-400">Customize the system dock.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Dock Position</label>
-                <select 
-                  value={persData?.dockPosition || 'Bottom'}
-                  onChange={(e) => updatePers({ dockPosition: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none appearance-none"
-                >
-                  <option value="Bottom">Bottom</option>
-                  <option value="Top">Top</option>
-                  <option value="Left">Left</option>
-                  <option value="Right">Right</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-300">Auto-hide Dock</span>
-                <button 
-                  onClick={() => updatePers({ dockAutoHide: !persData?.dockAutoHide })}
-                  className={`w-10 h-5 rounded-full relative transition-colors ${persData?.dockAutoHide ? 'bg-blue-500' : 'bg-gray-600'}`}
-                >
-                  <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${persData?.dockAutoHide ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-            </div>
-          </div>
+          <View style={styles.contentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Dock Settings</Text>
+              <Text style={styles.sectionSubtitle}>Customize the system dock.</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Dock Position</Text>
+                <View style={styles.inputField}>
+                  <Text style={styles.inputText}>{persData?.dockPosition || 'Bottom'}</Text>
+                </View>
+              </View>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Auto-hide Dock</Text>
+                <Switch 
+                  value={persData?.dockAutoHide || false}
+                  onValueChange={() => updatePers({ dockAutoHide: !persData?.dockAutoHide })}
+                  trackColor={{ false: '#4b5563', true: '#3b82f6' }}
+                  thumbColor="#fff"
+                />
+              </View>
+            </View>
+          </View>
         );
 
       default:
         return (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4 animate-in fade-in duration-500">
-            <SettingsIcon className="w-16 h-16 opacity-20" />
-            <p className="text-lg">Select a category from the sidebar</p>
-          </div>
+          <View style={styles.emptyContainer}>
+            <SettingsIcon color="rgba(255,255,255,0.2)" size={64} style={{ marginBottom: 16 }} />
+            <Text style={styles.emptyText}>Select a category from the sidebar</Text>
+          </View>
         );
     }
   };
 
   return (
-    <div className="flex h-full w-full bg-[#0f111a] text-white overflow-hidden">
+    <View style={styles.container}>
       {/* Sidebar */}
-      <div className="w-72 border-r border-white/10 bg-black/20 backdrop-blur-xl flex flex-col h-full">
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search settings..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
-            />
-          </div>
-        </div>
+      <View style={styles.sidebar}>
+        <View style={styles.searchContainer}>
+          <Search color="#9ca3af" size={16} style={styles.searchIcon} />
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="Search settings..."
+            placeholderTextColor="#6b7280"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
 
-        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-6 custom-scrollbar">
+        <ScrollView style={styles.sidebarScroll}>
           {SECTIONS.map((section) => (
-            <div key={section.title}>
-              <h3 className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                {section.title}
-              </h3>
-              <div className="space-y-1">
+            <View key={section.title} style={styles.sidebarSection}>
+              <Text style={styles.sidebarSectionTitle}>{section.title}</Text>
+              <View style={styles.sidebarSectionItems}>
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
-                    <button
+                    <TouchableOpacity
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all ${
-                        isActive 
-                          ? 'bg-blue-600/20 text-blue-400' 
-                          : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                      }`}
+                      onPress={() => setActiveTab(item.id)}
+                      style={[styles.sidebarItem, isActive && styles.sidebarItemActive]}
                     >
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </button>
+                      <Icon color={isActive ? '#60a5fa' : '#9ca3af'} size={16} />
+                      <Text style={[styles.sidebarItemText, isActive && styles.sidebarItemTextActive]}>{item.label}</Text>
+                    </TouchableOpacity>
                   );
                 })}
-              </div>
-            </div>
+              </View>
+            </View>
           ))}
-        </div>
-      </div>
+        </ScrollView>
+      </View>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-gradient-to-br from-transparent to-blue-900/10">
-        <div className="max-w-3xl mx-auto">
+      <View style={styles.mainContent}>
+        <ScrollView contentContainerStyle={styles.mainScrollContent}>
           {renderContent()}
-        </div>
-      </div>
-    </div>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 // Helper for the default empty state icon
 function SettingsIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
+  return <Info {...props} />;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#0f111a',
+  },
+  sidebar: {
+    width: 288,
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  searchContainer: {
+    padding: 16,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 28,
+    zIndex: 1,
+  },
+  searchInput: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    paddingLeft: 36,
+    paddingRight: 16,
+    paddingVertical: 8,
+    color: '#fff',
+    fontSize: 14,
+    outlineWidth: 0,
+  },
+  sidebarScroll: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  sidebarSection: {
+    marginBottom: 24,
+  },
+  sidebarSectionTitle: {
+    paddingHorizontal: 12,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  sidebarSectionItems: {
+    gap: 4,
+  },
+  sidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 12,
+  },
+  sidebarItemActive: {
+    backgroundColor: 'rgba(37, 99, 235, 0.2)',
+  },
+  sidebarItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#d1d5db',
+  },
+  sidebarItemTextActive: {
+    color: '#60a5fa',
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: 'rgba(30, 58, 138, 0.1)', // blue-900/10
+  },
+  mainScrollContent: {
+    padding: 32,
+    maxWidth: 768,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  contentContainer: {
+    gap: 32,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  logoContainer: {
+    width: 96,
+    height: 96,
+    backgroundColor: '#3b82f6', // simplified gradient
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  titleText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: -0.5,
+  },
+  subtitleText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#93c5fd',
+    marginTop: 4,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  gridItem: {
+    width: '48%',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 20,
+    borderRadius: 16,
+  },
+  gridItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  gridItemTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  gridItemValue: {
+    fontSize: 14,
+    color: '#d1d5db',
+    fontFamily: 'monospace',
+  },
+  sectionHeader: {
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: '#9ca3af',
+  },
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 24,
+    borderRadius: 16,
+  },
+  storageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  storageInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  storageUsedText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  storageUsedLabel: {
+    fontSize: 18,
+    fontWeight: 'normal',
+    color: '#6b7280',
+  },
+  storageFreeText: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 16,
+    backgroundColor: '#1f2937',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#8b5cf6', // purple-500
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#6b7280',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  formGroup: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#d1d5db',
+  },
+  inputField: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  inputText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  sliderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sliderValueText: {
+    color: '#fff',
+    fontFamily: 'monospace',
+    width: 32,
+    textAlign: 'right',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  switchLabel: {
+    fontSize: 14,
+    color: '#d1d5db',
+  },
+  listContainer: {
+    gap: 8,
+  },
+  listTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  listItemTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  listItemSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  listItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderRadius: 12,
+    gap: 12,
+  },
+  errorBoxText: {
+    color: '#f87171',
+    fontSize: 14,
+  },
+  errorText: {
+    color: '#f87171',
+    fontSize: 14,
+  },
+  emptyText: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  themeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  themeIconContainer: {
+    padding: 12,
+    borderRadius: 12,
+  },
+  themeTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  themeSubtitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  wallpaperGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  wallpaperItem: {
+    width: '48%',
+    aspectRatio: 16/9,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'relative',
+  },
+  wallpaperItemSelected: {
+    borderColor: '#3b82f6',
+  },
+  wallpaperImage: {
+    width: '100%',
+    height: '100%',
+  },
+  wallpaperCheck: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    padding: 2,
+  },
+  codeViewer: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    padding: 16,
+    maxHeight: 400,
+  },
+  codeText: {
+    color: '#d1d5db',
+    fontFamily: 'monospace',
+    fontSize: 14,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 100,
+  },
+  sliderContainer: {
+    height: 24,
+    justifyContent: 'center',
+  },
+  sliderTrack: {
+    height: 8,
+    backgroundColor: '#374151',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  sliderFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+  },
+});

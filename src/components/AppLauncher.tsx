@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Search, Box, Power, Plus, ChevronUp } from 'lucide-react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Dimensions, Pressable } from 'react-native';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import { Search, ChevronUp } from 'lucide-react';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 import { getAppIcon } from '../utils/icons';
 import { playSound } from '../utils/sounds';
 import { getEmbedUrl } from '../utils/url';
+
+const { width, height } = Dimensions.get('window');
 
 export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [apps, setApps] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const { openWindow } = useWindowManager();
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -70,83 +73,183 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     return app.name.toLowerCase().includes(search.toLowerCase()) || app.exec.toLowerCase().includes(search.toLowerCase());
   });
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Chrome OS style full-screen blurred background */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-md"
-            onClick={onClose}
-          />
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed z-[45] left-1/2 bottom-20 -translate-x-1/2 w-[90%] max-w-2xl h-[60vh] max-h-[500px] bg-gray-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 flex flex-col overflow-hidden"
-          >
-            {/* Search Bar Area */}
-            <div className="p-6 pb-2">
-              <div className="relative max-w-xl mx-auto">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input 
-                  ref={searchInputRef}
-                  type="text" 
-                  placeholder="Search your device, apps, web..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-white/10 border border-white/5 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
-                />
-              </div>
-            </div>
+  if (!isOpen) return null;
 
-            {/* Apps Grid */}
-            <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
-              {loading ? (
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                </div>
-              ) : filteredApps.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <Search className="w-12 h-12 mb-4 opacity-50" />
-                  <p>No apps found for "{search}"</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-x-4 gap-y-6 max-w-xl mx-auto">
-                  {filteredApps.map((app, i) => (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.01 }}
-                      onClick={() => launchApp(app)}
-                      className="flex flex-col items-center justify-start group p-2 rounded-2xl hover:bg-white/10 transition-colors"
-                    >
-                      <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform duration-200">
-                        {getAppIcon(app)}
-                      </div>
-                      <span className="text-xs text-center text-gray-200 group-hover:text-white line-clamp-2 leading-tight px-1 font-medium">
-                        {app.name}
-                      </span>
-                    </motion.button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Bottom Chevron (Chrome OS style) */}
-            <div className="h-10 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors border-t border-white/5" onClick={onClose}>
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+  return (
+    <>
+      {/* Chrome OS style full-screen blurred background */}
+      <Animated.View 
+        entering={FadeIn.duration(200)}
+        exiting={FadeOut.duration(200)}
+        style={styles.backdrop}
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+      
+      <Animated.View 
+        entering={SlideInDown.springify().damping(25).stiffness(300)}
+        exiting={SlideOutDown.duration(200)}
+        style={styles.launcherContainer}
+      >
+        {/* Search Bar Area */}
+        <View style={styles.searchArea}>
+          <View style={styles.searchContainer}>
+            <Search color="#9ca3af" size={20} style={styles.searchIcon} />
+            <TextInput 
+              ref={searchInputRef}
+              placeholder="Search your device, apps, web..." 
+              placeholderTextColor="#9ca3af"
+              value={search}
+              onChangeText={setSearch}
+              style={styles.searchInput}
+            />
+          </View>
+        </View>
+
+        {/* Apps Grid */}
+        <ScrollView style={styles.appsScroll} contentContainerStyle={styles.appsContent}>
+          {loading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color="#ffffff" />
+            </View>
+          ) : filteredApps.length === 0 ? (
+            <View style={styles.centerContainer}>
+              <Search color="rgba(255,255,255,0.5)" size={48} style={{ marginBottom: 16 }} />
+              <Text style={styles.noAppsText}>No apps found for "{search}"</Text>
+            </View>
+          ) : (
+            <View style={styles.grid}>
+              {filteredApps.map((app, i) => (
+                <Animated.View 
+                  key={i}
+                  entering={ZoomIn.delay(i * 10)}
+                  style={styles.appItemContainer}
+                >
+                  <TouchableOpacity
+                    onPress={() => launchApp(app)}
+                    style={styles.appItem}
+                  >
+                    <View style={styles.appIconContainer}>
+                      {getAppIcon(app)}
+                    </View>
+                    <Text style={styles.appName} numberOfLines={2}>
+                      {app.name}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+        
+        {/* Bottom Chevron (Chrome OS style) */}
+        <TouchableOpacity style={styles.bottomChevron} onPress={onClose}>
+          <ChevronUp color="#9ca3af" size={20} />
+        </TouchableOpacity>
+      </Animated.View>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    zIndex: 40,
+  },
+  launcherContainer: {
+    position: 'absolute',
+    zIndex: 45,
+    left: '50%',
+    bottom: 80,
+    transform: [{ translateX: -Math.min(width * 0.9, 672) / 2 }],
+    width: '90%',
+    maxWidth: 672,
+    height: height * 0.6,
+    maxHeight: 500,
+    backgroundColor: 'rgba(17, 24, 39, 0.8)', // gray-900/80
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
+    flexDirection: 'column',
+  },
+  searchArea: {
+    padding: 24,
+    paddingBottom: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+    height: 48,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 16,
+    outlineWidth: 0,
+  },
+  appsScroll: {
+    flex: 1,
+  },
+  appsContent: {
+    padding: 24,
+    paddingTop: 16,
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+  },
+  noAppsText: {
+    color: '#9ca3af',
+    fontSize: 16,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  appItemContainer: {
+    width: 80,
+    marginBottom: 8,
+  },
+  appItem: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    padding: 8,
+    borderRadius: 16,
+  },
+  appIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  appName: {
+    fontSize: 12,
+    color: '#e5e7eb',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  bottomChevron: {
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+});

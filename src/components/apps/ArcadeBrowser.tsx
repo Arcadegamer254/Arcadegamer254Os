@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { WebView } from '../WebView';
 import { Globe, Search, ArrowLeft, ArrowRight, RotateCw, Home, AlertTriangle, Shield, ShieldOff } from 'lucide-react';
 import { getEmbedUrl } from '../../utils/url';
 
@@ -6,18 +8,16 @@ export function ArcadeBrowser({ initialUrl }: { initialUrl?: string }) {
   const [url, setUrl] = useState(initialUrl || 'https://www.google.com/webhp?igu=1');
   const [inputUrl, setInputUrl] = useState(initialUrl || 'https://www.google.com');
   const [loading, setLoading] = useState(false);
-  const [iframeError, setIframeError] = useState(false);
   const [useProxy, setUseProxy] = useState(false);
   const [useAdblock, setUseAdblock] = useState(true);
 
   useEffect(() => {
     if (initialUrl) {
-      handleNavigate(undefined, false, true, initialUrl);
+      handleNavigate(initialUrl, false, true);
     }
   }, [initialUrl]);
 
-  const handleNavigate = (e?: React.FormEvent, forceProxy?: boolean, forceAdblock?: boolean, targetUrl?: string) => {
-    if (e) e.preventDefault();
+  const handleNavigate = (targetUrl?: string, forceProxy?: boolean, forceAdblock?: boolean) => {
     let finalUrl = (targetUrl || inputUrl).trim();
     
     // Check if it's a search query (no dot, or contains spaces)
@@ -40,7 +40,6 @@ export function ArcadeBrowser({ initialUrl }: { initialUrl?: string }) {
     
     setUrl(proxiedUrl);
     setInputUrl(finalUrl);
-    setIframeError(false);
   };
 
   const toggleProxy = () => {
@@ -52,105 +51,160 @@ export function ArcadeBrowser({ initialUrl }: { initialUrl?: string }) {
   const toggleAdblock = () => {
     const newAdblockState = !useAdblock;
     setUseAdblock(newAdblockState);
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'TOGGLE_ADBLOCK',
-        enabled: newAdblockState
-      });
-    }
     handleNavigate(undefined, useProxy, newAdblockState);
   };
 
   return (
-    <div className="flex flex-col h-full bg-white text-gray-900">
+    <View style={styles.container}>
       {/* Browser Chrome */}
-      <div className="flex items-center space-x-2 px-4 py-2 bg-gray-100 border-b border-gray-300">
-        <div className="flex space-x-1">
-          <button className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <button className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600">
-            <ArrowRight className="w-4 h-4" />
-          </button>
-          <button 
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
-            onClick={() => {
+      <View style={styles.toolbar}>
+        <View style={styles.navButtons}>
+          <Pressable style={styles.iconButton}>
+            {/* @ts-ignore */}
+            <ArrowLeft size={16} color="#4b5563" />
+          </Pressable>
+          <Pressable style={styles.iconButton}>
+            {/* @ts-ignore */}
+            <ArrowRight size={16} color="#4b5563" />
+          </Pressable>
+          <Pressable 
+            style={styles.iconButton}
+            onPress={() => {
               setLoading(true);
-              setIframeError(false);
               setTimeout(() => setLoading(false), 500);
             }}
           >
-            <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button 
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
-            onClick={() => {
+            {/* @ts-ignore */}
+            <RotateCw size={16} color="#4b5563" />
+          </Pressable>
+          <Pressable 
+            style={styles.iconButton}
+            onPress={() => {
               setUrl('https://www.google.com/webhp?igu=1');
               setInputUrl('https://www.google.com');
-              setIframeError(false);
             }}
           >
-            <Home className="w-4 h-4" />
-          </button>
-        </div>
+            {/* @ts-ignore */}
+            <Home size={16} color="#4b5563" />
+          </Pressable>
+        </View>
 
-        <form onSubmit={handleNavigate} className="flex-1 flex items-center bg-white border border-gray-300 rounded-full px-4 py-1.5 shadow-sm">
-          <Globe className="w-4 h-4 text-gray-400 mr-2" />
-          <input 
-            type="text" 
+        <View style={styles.addressBar}>
+          {/* @ts-ignore */}
+          <Globe size={16} color="#9ca3af" style={styles.addressIcon} />
+          <TextInput 
+            style={styles.addressInput}
             value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            className="w-full bg-transparent border-none focus:outline-none text-sm"
+            onChangeText={setInputUrl}
+            onSubmitEditing={() => handleNavigate()}
             placeholder="Search or enter web address"
+            placeholderTextColor="#9ca3af"
+            autoCapitalize="none"
+            autoCorrect={false}
           />
-        </form>
+        </View>
         
-        <button
-          onClick={toggleAdblock}
-          className={`p-2 rounded-full transition-colors ml-2 ${useAdblock ? 'bg-red-100 text-red-600' : 'hover:bg-gray-200 text-gray-600'}`}
-          title={useAdblock ? "Adblock Enabled (Blocks known ad domains)" : "Adblock Disabled"}
+        <Pressable
+          onPress={toggleAdblock}
+          style={[styles.iconButton, useAdblock ? styles.activeAdblock : null]}
         >
-          <AlertTriangle className="w-4 h-4" />
-        </button>
+          {/* @ts-ignore */}
+          <AlertTriangle size={16} color={useAdblock ? "#dc2626" : "#4b5563"} />
+        </Pressable>
 
-        <button
-          onClick={toggleProxy}
-          className={`p-2 rounded-full transition-colors ml-1 ${useProxy ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
-          title={useProxy ? "Proxy Enabled (Bypasses X-Frame-Options but may break complex sites)" : "Proxy Disabled (Complex sites work, but some may refuse to connect)"}
+        <Pressable
+          onPress={toggleProxy}
+          style={[styles.iconButton, useProxy ? styles.activeProxy : null]}
         >
-          {useProxy ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-        </button>
-      </div>
+          {/* @ts-ignore */}
+          {useProxy ? <ShieldOff size={16} color="#2563eb" /> : <Shield size={16} color="#4b5563" />}
+        </Pressable>
+      </View>
 
       {/* Browser Content */}
-      <div className="flex-1 bg-white relative">
+      <View style={styles.content}>
         {loading && (
-          <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 animate-pulse z-10" />
+          <View style={styles.loadingBar}>
+            <ActivityIndicator color="#3b82f6" />
+          </View>
         )}
         
-        {iframeError ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
-            <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Connection Refused</h2>
-            <p className="text-gray-600 mb-6 max-w-md">
-              This website does not allow itself to be embedded inside other applications (X-Frame-Options: DENY).
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* For Electron/Tauri desktop builds, swap this <iframe> for a <webview src={url} className="..." /> */}
-            <iframe 
-              src={url} 
-              className="w-full h-full border-none"
-              title="Arcade Browser"
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads allow-pointer-lock allow-presentation"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; microphone; camera; midi; vr; xr-spatial-tracking"
-              onLoad={() => setLoading(false)}
-              onError={() => setIframeError(true)}
-            />
-          </>
-        )}
-      </div>
-    </div>
+        <WebView 
+          source={{ uri: url }} 
+          style={styles.webview}
+          onLoadStart={() => setLoading(true)}
+          onLoadEnd={() => setLoading(false)}
+        />
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f3f4f6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db',
+  },
+  navButtons: {
+    flexDirection: 'row',
+    marginRight: 8,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 9999,
+    marginHorizontal: 2,
+  },
+  addressBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  addressIcon: {
+    marginRight: 8,
+  },
+  addressInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    padding: 0, // Remove default padding on Android
+  },
+  activeAdblock: {
+    backgroundColor: '#fee2e2',
+  },
+  activeProxy: {
+    backgroundColor: '#dbeafe',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  loadingBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  webview: {
+    flex: 1,
+  }
+});
