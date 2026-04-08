@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Modal, Alert, Platform } from 'react-native';
 import { WebView } from '../WebView';
-import { Folder, File, ChevronRight, ChevronLeft, Home, HardDrive, FileText, Image as ImageIcon, Music, Video, Archive, Code, Search, RefreshCw, AlertCircle, Plus, Trash2, Edit2, Save, Download, Clock, Terminal } from 'lucide-react';
+import { Folder, File, ChevronRight, ChevronLeft, Home, HardDrive, FileText, Image as ImageIcon, Music, Video, Archive, Code, Search, RefreshCw, AlertCircle, Plus, Trash2, Edit2, Save, Download, Clock, Terminal } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { vfs, FileInfo } from '../../services/vfs';
 
@@ -477,7 +477,6 @@ const styles = StyleSheet.create({
     color: '#e5e7eb',
     fontSize: 14,
     marginLeft: 8,
-    outlineWidth: 0,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -570,7 +569,6 @@ const styles = StyleSheet.create({
     color: '#d1d5db',
     fontFamily: 'monospace',
     fontSize: 14,
-    outlineWidth: 0,
   },
   codeViewer: {
     flex: 1,
@@ -690,7 +688,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     color: '#ffffff',
     marginBottom: 16,
-    outlineWidth: 0,
   },
   dialogActions: {
     flexDirection: 'row',

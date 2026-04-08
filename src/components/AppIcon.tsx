@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, GestureResponderEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { getAppIcon } from '../utils/icons';
-import { X } from 'lucide-react';
+import { X } from 'lucide-react-native';
 
 export interface AppType {
   name: string;

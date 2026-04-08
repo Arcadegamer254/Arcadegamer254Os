@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, View } from 'react-native';
-import { Terminal, Settings as SettingsIcon, Package, Activity, Chrome, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box } from 'lucide-react';
+import { Terminal, Settings as SettingsIcon, Package, Activity, Globe, Music, Video, Image as ImageIcon, Folder, Mail, Play, Box } from 'lucide-react-native';
 import { Svg, Path } from 'react-native-svg';
 
 export const AIcon = ({ className, color = "#3b82f6", size = 32 }: { className?: string, color?: string, size?: number }) => (
@@ -29,7 +29,7 @@ export const getAppIcon = (app: any) => {
   if (name.includes('settings') || exec.includes('settings')) return <SettingsIcon color="#9ca3af" size={32} />;
   if (name.includes('store') || name.includes('software') || exec.includes('appstore')) return <AIcon color="#3b82f6" size={32} />;
   if (name.includes('monitor') || name.includes('task') || exec.includes('monitor')) return <Activity color="#f87171" size={32} />;
-  if (name.includes('browser') || name.includes('chrome') || name.includes('firefox')) return <Chrome color="#3b82f6" size={32} />;
+  if (name.includes('browser') || name.includes('chrome') || name.includes('firefox')) return <Globe color="#3b82f6" size={32} />;
   if (name.includes('music') || name.includes('spotify') || name.includes('audacity')) return <Music color="#22c55e" size={32} />;
   if (name.includes('video') || name.includes('player') || name.includes('obs') || name.includes('kdenlive') || name.includes('handbrake')) return <Video color="#c084fc" size={32} />;
   if (name.includes('image') || name.includes('photo') || name.includes('gimp') || name.includes('krita') || name.includes('blender') || name.includes('inkscape')) return <ImageIcon color="#facc15" size={32} />;

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Terminal as TerminalIcon, Plus, X } from 'lucide-react';
+import { Terminal as TerminalIcon, Plus, X } from 'lucide-react-native';
 
 export function Terminal() {
   const [history, setHistory] = useState<{ type: 'input' | 'output', text: string }[]>([
@@ -182,6 +182,5 @@ const styles = StyleSheet.create({
     color: '#f3f4f6',
     padding: 0,
     margin: 0,
-    outlineWidth: 0,
   },
 });

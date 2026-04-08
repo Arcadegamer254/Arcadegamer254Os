@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView } from '../WebView';
-import { Globe, Search, ArrowLeft, ArrowRight, RotateCw, Home, AlertTriangle, Shield, ShieldOff } from 'lucide-react';
+import { Globe, Search, ArrowLeft, ArrowRight, RotateCw, Home, AlertTriangle, Shield, ShieldOff } from 'lucide-react-native';
 import { getEmbedUrl } from '../../utils/url';
 
 export function ArcadeBrowser({ initialUrl }: { initialUrl?: string }) {

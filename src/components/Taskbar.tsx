@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Settings as SettingsIcon, Activity, Terminal, Chrome, Music, Video, Folder, Box, LayoutGrid } from 'lucide-react';
+import { Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Wifi, WifiOff, Settings as SettingsIcon, Activity, Terminal, Globe, Music, Video, Folder, Box, LayoutGrid } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { useOSStore } from '../store/osStore';
 import { AppLauncher } from './AppLauncher';
@@ -115,7 +115,7 @@ export function Taskbar() {
       // @ts-ignore
       case 'terminal': return <Terminal size={20} color="#d1d5db" />;
       // @ts-ignore
-      case 'browser': return <Chrome size={20} color="#d1d5db" />;
+      case 'browser': return <Globe size={20} color="#d1d5db" />;
       // @ts-ignore
       case 'files': return <Folder size={20} color="#d1d5db" />;
       default: 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Pressable, PanResponder } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay } from 'date-fns';
-import { Wifi, WifiOff, Bluetooth, BluetoothOff, Battery, ChevronLeft, ChevronRight, Settings as SettingsIcon, Volume2, VolumeX } from 'lucide-react';
+import { Wifi, WifiOff, Bluetooth, BluetoothOff, Battery, ChevronLeft, ChevronRight, Settings as SettingsIcon, Volume2, VolumeX } from 'lucide-react-native';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 
 const { width, height } = Dimensions.get('window');

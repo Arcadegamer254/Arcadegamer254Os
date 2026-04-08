@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
+
 // Initialize AudioContext lazily to comply with browser autoplay policies
 let audioCtx: AudioContext | null = null;
 
 const getAudioContext = () => {
-  if (!audioCtx) {
+  if (!audioCtx && Platform.OS === 'web') {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
   return audioCtx;
@@ -14,6 +16,7 @@ export const playSound = (type: 'startup' | 'click' | 'error' | 'notification') 
     .then(data => {
       if (data.systemSound) {
         const ctx = getAudioContext();
+        if (!ctx) return;
         if (ctx.state === 'suspended') {
           ctx.resume();
         }

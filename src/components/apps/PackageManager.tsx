@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { Search, Download, Check, Package as PackageIcon } from 'lucide-react';
+import { Search, Download, Check, Package as PackageIcon } from 'lucide-react-native';
 
 export function PackageManager() {
   const [activeTab, setActiveTab] = useState('search');
@@ -231,7 +231,6 @@ const styles = StyleSheet.create({
     height: 56,
     fontSize: 18,
     color: '#f3f4f6',
-    outlineWidth: 0,
   },
   resultsList: {
     flex: 1,

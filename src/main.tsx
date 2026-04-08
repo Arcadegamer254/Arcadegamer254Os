@@ -4,7 +4,7 @@ import { AppRegistry } from 'react-native';
 import App from './App.tsx';
 import './index.css';
 
-if ('serviceWorker' in navigator) {
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(error => {
       console.log('ServiceWorker registration failed: ', error);

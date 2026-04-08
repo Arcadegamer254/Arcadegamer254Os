@@ -5,7 +5,7 @@ import {
   Palette, Image as ImageIcon, LayoutGrid, Clock, Globe, 
   AppWindow, PlayCircle, Lock, Shield, Search, ChevronRight,
   Cpu, Activity, Type, CheckCircle, WifiOff, Sun, Moon
-} from 'lucide-react';
+} from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -893,7 +893,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     color: '#fff',
     fontSize: 14,
-    outlineWidth: 0,
   },
   sidebarScroll: {
     flex: 1,

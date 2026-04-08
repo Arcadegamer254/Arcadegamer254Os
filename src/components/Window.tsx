@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useOSStore, WindowState } from '../store/osStore';
-import { X, Square, Minus } from 'lucide-react';
+import { X, Square, Minus } from 'lucide-react-native';
 
 const DOCK_HEIGHT = 60; // approximate
 

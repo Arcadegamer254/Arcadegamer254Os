@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Dimensions, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, ZoomIn, ZoomOut } from 'react-native-reanimated';
-import { Search, ChevronUp } from 'lucide-react';
+import { Search, ChevronUp } from 'lucide-react-native';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 import { getAppIcon } from '../utils/icons';
 import { playSound } from '../utils/sounds';
@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#ffffff',
     fontSize: 16,
-    outlineWidth: 0,
   },
   appsScroll: {
     flex: 1,

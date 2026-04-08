@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown } from 'react-native-reanimated';
-import { ChevronRight, User, UserPlus, AlertCircle } from 'lucide-react';
+import { ChevronRight, User, UserPlus, AlertCircle } from 'lucide-react-native';
 import { playSound } from '../utils/sounds';
 
 const { width, height } = Dimensions.get('window');
@@ -379,7 +379,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: 'white',
     fontSize: 16,
-    outlineWidth: 0,
   },
   button: {
     width: '100%',

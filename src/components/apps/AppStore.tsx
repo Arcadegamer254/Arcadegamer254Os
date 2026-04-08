@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { Search, Download, Check, Trash2, ShoppingBag } from 'lucide-react';
+import { Search, Download, Check, Trash2, ShoppingBag } from 'lucide-react-native';
 import { getAppIcon, AIcon } from '../../utils/icons';
 
 export function AppStore() {
@@ -225,7 +225,6 @@ const styles = StyleSheet.create({
     height: 56,
     fontSize: 18,
     color: '#f3f4f6',
-    outlineWidth: 0,
   },
   scrollContent: {
     flex: 1,

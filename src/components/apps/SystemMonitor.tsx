@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Activity, Cpu, HardDrive } from 'lucide-react';
+import { Activity, Cpu, HardDrive } from 'lucide-react-native';
 
 export function SystemMonitor() {
   const [cpu, setCpu] = useState(0);

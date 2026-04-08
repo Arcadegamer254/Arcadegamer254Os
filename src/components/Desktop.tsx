@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, GestureResponderEvent } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, GestureResponderEvent, Platform } from 'react-native';
 import { WebView } from './WebView';
 import { useOSStore } from '../store/osStore';
 import { Window } from './Window';
@@ -39,8 +39,10 @@ export function Desktop() {
         setOverviewMode(!overviewMode);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    if (Platform.OS === 'web') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [overviewMode, setOverviewMode]);
 
   useEffect(() => {
