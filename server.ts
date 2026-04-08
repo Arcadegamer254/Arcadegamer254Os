@@ -3,7 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import os from "os";
-import { exec } from "child_process";
+import { exec, spawn } from "child_process";
 import { promisify } from "util";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
@@ -573,7 +573,7 @@ async function startServer() {
 
   app.get("/api/system/user", (req, res) => {
     try {
-      const username = require('os').userInfo().username;
+      const username = os.userInfo().username;
       res.json({ username });
     } catch (error: any) {
       res.json({ username: "arcadegamer254" });
@@ -663,7 +663,7 @@ async function startServer() {
   app.post("/api/system/apps/launch", async (req, res) => {
     try {
       const { exec: cmd } = req.body;
-      const child = require('child_process').spawn(cmd, [], { 
+      const child = spawn(cmd, [], { 
         shell: true, 
         detached: true, 
         stdio: 'ignore',
