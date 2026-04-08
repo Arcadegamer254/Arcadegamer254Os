@@ -262,17 +262,24 @@ async function startServer() {
   // --- SYSTEM INFO ---
   app.get("/api/system/info", async (req, res) => {
     try {
-      const cpuinfo = fs.existsSync("/proc/cpuinfo") ? fs.readFileSync("/proc/cpuinfo", "utf-8") : "";
-      const meminfo = fs.existsSync("/proc/meminfo") ? fs.readFileSync("/proc/meminfo", "utf-8") : "";
-      
-      const cpuMatch = cpuinfo.match(/model name\s+:\s+(.+)/);
-      const memTotalMatch = meminfo.match(/MemTotal:\s+(\d+)\s+kB/);
-      const memFreeMatch = meminfo.match(/MemAvailable:\s+(\d+)\s+kB/);
+      let cpuModel = "Unknown CPU";
+      try {
+        const cpus = os.cpus();
+        if (cpus && cpus.length > 0) {
+          cpuModel = cpus[0].model;
+          if (cpuModel === "unknown" || cpuModel.trim() === "") {
+            cpuModel = "Google Cloud Run vCPU";
+          }
+        }
+      } catch (e) {}
+
+      const memTotal = os.totalmem();
+      const memFree = os.freemem();
 
       res.json({
-        cpu: cpuMatch ? cpuMatch[1] : "Unknown CPU",
-        memTotal: memTotalMatch ? Math.round(parseInt(memTotalMatch[1]) / 1024) : 0,
-        memFree: memFreeMatch ? Math.round(parseInt(memFreeMatch[1]) / 1024) : 0,
+        cpu: cpuModel,
+        memTotal: memTotal ? Math.round(memTotal / (1024 * 1024)) : 0,
+        memFree: memFree ? Math.round(memFree / (1024 * 1024)) : 0,
       });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
@@ -365,10 +372,27 @@ async function startServer() {
         }
       }
       
-      const cpuinfo = fs.existsSync("/proc/cpuinfo") ? fs.readFileSync("/proc/cpuinfo", "utf-8") : "";
-      const meminfo = fs.existsSync("/proc/meminfo") ? fs.readFileSync("/proc/meminfo", "utf-8") : "";
-      const cpuMatch = cpuinfo.match(/model name\s+:\s+(.+)/);
-      const memTotalMatch = meminfo.match(/MemTotal:\s+(\d+)\s+kB/);
+      let cpuModel = "Unknown CPU";
+      try {
+        const cpus = os.cpus();
+        if (cpus && cpus.length > 0) {
+          cpuModel = cpus[0].model;
+          if (cpuModel === "unknown" || cpuModel.trim() === "") {
+            cpuModel = "Google Cloud Run vCPU";
+          }
+        }
+      } catch (e) {}
+
+      let gpuModel = "Software Rendering (Cloud)";
+      try {
+        // Try to get GPU info if available, otherwise fallback
+        const { stdout } = await execAsync("lspci | grep -i vga");
+        if (stdout.trim()) {
+          gpuModel = stdout.trim().split(': ')[1] || gpuModel;
+        }
+      } catch (e) {}
+
+      const memTotal = os.totalmem();
 
       res.json({ 
         kernel, 
@@ -376,8 +400,9 @@ async function startServer() {
         uptime, 
         os: "Arcadegamer254 os", 
         version: "1.0.0-stable",
-        cpu: cpuMatch ? cpuMatch[1].trim() : "Unknown CPU",
-        ram: memTotalMatch ? Math.round(parseInt(memTotalMatch[1]) / 1024) + " MB" : "Unknown RAM"
+        cpu: cpuModel,
+        gpu: gpuModel,
+        ram: memTotal ? Math.round(memTotal / (1024 * 1024)) + " MB" : "Unknown RAM"
       });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -689,34 +714,70 @@ async function startServer() {
   let lastCpu = { idle: 0, total: 0 };
   app.get("/api/system/monitor", async (req, res) => {
     try {
-      const meminfo = fs.existsSync("/proc/meminfo") ? fs.readFileSync("/proc/meminfo", "utf-8") : "";
-      const memTotalMatch = meminfo.match(/MemTotal:\s+(\d+)/);
-      const memAvailMatch = meminfo.match(/MemAvailable:\s+(\d+)/);
-      
       let ramUsage = 0, memTotal = 0, memAvail = 0;
-      if (memTotalMatch && memAvailMatch) {
-        memTotal = parseInt(memTotalMatch[1], 10);
-        memAvail = parseInt(memAvailMatch[1], 10);
-        ramUsage = ((memTotal - memAvail) / memTotal) * 100;
-      }
-
-      const stat = fs.existsSync("/proc/stat") ? fs.readFileSync("/proc/stat", "utf-8") : "";
-      const cpuMatch = stat.match(/^cpu\s+(.*)$/m);
-      let cpuUsage = 0;
-      if (cpuMatch) {
-        const parts = cpuMatch[1].trim().split(/\s+/).map(Number);
-        const idle = parts[3] + (parts[4] || 0);
-        const total = parts.reduce((a, b) => a + b, 0);
-        
-        const idleDiff = idle - lastCpu.idle;
-        const totalDiff = total - lastCpu.total;
-        if (totalDiff > 0) {
-          cpuUsage = 100 * (1 - idleDiff / totalDiff);
+      
+      if (fs.existsSync("/proc/meminfo")) {
+        const meminfo = fs.readFileSync("/proc/meminfo", "utf-8");
+        const memTotalMatch = meminfo.match(/MemTotal:\s+(\d+)/);
+        const memAvailMatch = meminfo.match(/MemAvailable:\s+(\d+)/);
+        if (memTotalMatch && memAvailMatch) {
+          memTotal = parseInt(memTotalMatch[1], 10);
+          memAvail = parseInt(memAvailMatch[1], 10);
+          ramUsage = ((memTotal - memAvail) / memTotal) * 100;
         }
-        lastCpu = { idle, total };
+      } else {
+        const total = os.totalmem();
+        const free = os.freemem();
+        memTotal = Math.round(total / 1024);
+        memAvail = Math.round(free / 1024);
+        ramUsage = ((total - free) / total) * 100;
       }
 
-      res.json({ cpu: cpuUsage, ram: ramUsage, memTotal, memAvail });
+      let cpuUsage = 0;
+      if (fs.existsSync("/proc/stat")) {
+        const stat = fs.readFileSync("/proc/stat", "utf-8");
+        const cpuMatch = stat.match(/^cpu\s+(.*)$/m);
+        if (cpuMatch) {
+          const parts = cpuMatch[1].trim().split(/\s+/).map(Number);
+          const idle = parts[3] + (parts[4] || 0);
+          const total = parts.reduce((a, b) => a + b, 0);
+          
+          const idleDiff = idle - lastCpu.idle;
+          const totalDiff = total - lastCpu.total;
+          if (totalDiff > 0) {
+            cpuUsage = 100 * (1 - idleDiff / totalDiff);
+          }
+          lastCpu = { idle, total };
+        }
+      } else {
+        const cpus = os.cpus();
+        if (cpus && cpus.length > 0) {
+          let idle = 0;
+          let total = 0;
+          for (const cpu of cpus) {
+            for (const type in cpu.times) {
+              total += cpu.times[type as keyof typeof cpu.times];
+            }
+            idle += cpu.times.idle;
+          }
+          const idleDiff = idle - lastCpu.idle;
+          const totalDiff = total - lastCpu.total;
+          if (totalDiff > 0) {
+            cpuUsage = 100 * (1 - idleDiff / totalDiff);
+          }
+          lastCpu = { idle, total };
+        }
+      }
+
+      let gpuModel = "Software Rendering (Cloud)";
+      try {
+        const { stdout } = await execAsync("lspci | grep -i vga");
+        if (stdout.trim()) {
+          gpuModel = stdout.trim().split(': ')[1] || gpuModel;
+        }
+      } catch (e) {}
+
+      res.json({ cpu: cpuUsage, ram: ramUsage, memTotal, memAvail, gpu: gpuModel });
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 

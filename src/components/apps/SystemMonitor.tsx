@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Activity, Cpu, HardDrive } from 'lucide-react-native';
+import { Activity, Cpu, HardDrive, Monitor } from 'lucide-react-native';
 
 export function SystemMonitor() {
   const [cpu, setCpu] = useState(0);
   const [ram, setRam] = useState(0);
   const [memTotal, setMemTotal] = useState(0);
   const [memAvail, setMemAvail] = useState(0);
+  const [gpu, setGpu] = useState('Loading...');
 
   useEffect(() => {
     const fetchMonitor = async () => {
@@ -17,6 +18,7 @@ export function SystemMonitor() {
         if (data.ram !== undefined) setRam(data.ram);
         if (data.memTotal !== undefined) setMemTotal(data.memTotal);
         if (data.memAvail !== undefined) setMemAvail(data.memAvail);
+        if (data.gpu !== undefined) setGpu(data.gpu);
       } catch (e) {
         console.error("Failed to fetch system monitor data", e);
       }
@@ -52,6 +54,18 @@ export function SystemMonitor() {
           </View>
           
           <Text style={styles.footerText}>Reading from /proc/stat</Text>
+        </View>
+
+        {/* GPU Monitor */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardTitleContainer}>
+              <Monitor color="#f472b6" size={24} />
+              <Text style={styles.cardTitle}>GPU Info</Text>
+            </View>
+          </View>
+          <Text style={[styles.percentage, { color: '#f472b6', fontSize: 16, marginBottom: 12 }]}>{gpu}</Text>
+          <Text style={styles.footerText}>Graphics Processing Unit</Text>
         </View>
 
         {/* RAM Monitor */}

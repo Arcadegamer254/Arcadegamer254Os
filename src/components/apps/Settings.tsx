@@ -228,6 +228,13 @@ export function Settings() {
               </View>
               <View style={styles.gridItem}>
                 <View style={styles.gridItemHeader}>
+                  <Monitor color="#60a5fa" size={20} />
+                  <Text style={styles.gridItemTitle}>Graphics</Text>
+                </View>
+                <Text style={styles.gridItemValue}>{aboutData?.gpu || 'Loading...'}</Text>
+              </View>
+              <View style={styles.gridItem}>
+                <View style={styles.gridItemHeader}>
                   <HardDrive color="#c084fc" size={20} />
                   <Text style={styles.gridItemTitle}>Installed RAM</Text>
                 </View>
