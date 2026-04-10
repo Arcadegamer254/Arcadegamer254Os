@@ -62,6 +62,7 @@ export function AppIcon({
         onPressIn={() => { scale.value = withSpring(0.95); }}
         onPressOut={() => { scale.value = withSpring(1); }}
         onPress={() => onLaunch(app)}
+        onLongPress={(e) => onRemove(e, app)}
         style={styles.pressable}
       >
         <Animated.View style={[styles.container, animatedStyle]}>
@@ -72,13 +73,6 @@ export function AppIcon({
           <Text style={styles.text} numberOfLines={2}>
             {app.name}
           </Text>
-          <Pressable
-            onPress={(e) => onRemove(e, app)}
-            style={styles.removeButton}
-          >
-            {/* @ts-ignore */}
-            <X size={12} color="white" />
-          </Pressable>
         </Animated.View>
       </Pressable>
     </View>
@@ -117,13 +111,5 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    padding: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.8)',
-    borderRadius: 12,
   }
 });

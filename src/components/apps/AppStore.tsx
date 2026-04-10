@@ -3,6 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Activi
 import { Search, Download, Check, Trash2, ShoppingBag } from 'lucide-react-native';
 import { getAppIcon, AIcon } from '../../utils/icons';
 
+import { systemApi } from '../../services/system';
+import { Platform } from 'react-native';
+
 export function AppStore() {
   const [query, setQuery] = useState('');
   const [packages, setPackages] = useState<any[]>([]);
@@ -65,6 +68,25 @@ export function AppStore() {
       const data = await res.json();
       if (!data.error) {
         setPackages(prev => prev.map(p => p.name === pkg.name ? { ...p, installed: true } : p));
+        
+        // Add to desktop
+        try {
+          const pers = await systemApi.getPersonalization();
+          const desktopApps = pers.desktopApps || [];
+          const appName = pkg.name.charAt(0).toUpperCase() + pkg.name.slice(1);
+          if (!desktopApps.find((a: any) => a.name === appName)) {
+            const newApp = {
+              name: appName,
+              exec: pkg.isWebApp ? `web:${pkg.exec}` : pkg.name,
+              icon: pkg.icon || 'box'
+            };
+            const newDesktopApps = [...desktopApps, newApp];
+            await systemApi.updatePersonalization({ desktopApps: newDesktopApps });
+            if (Platform.OS === 'web') {
+              window.dispatchEvent(new Event('pers-updated'));
+            }
+          }
+        } catch (e) {}
       }
     } catch (e) {
       console.error(e);
@@ -83,6 +105,18 @@ export function AppStore() {
       const data = await res.json();
       if (!data.error) {
         setPackages(prev => prev.map(p => p.name === pkg.name ? { ...p, installed: false } : p));
+        
+        // Remove from desktop
+        try {
+          const pers = await systemApi.getPersonalization();
+          const desktopApps = pers.desktopApps || [];
+          const appName = pkg.name.charAt(0).toUpperCase() + pkg.name.slice(1);
+          const newDesktopApps = desktopApps.filter((a: any) => a.name !== appName);
+          await systemApi.updatePersonalization({ desktopApps: newDesktopApps });
+          if (Platform.OS === 'web') {
+            window.dispatchEvent(new Event('pers-updated'));
+          }
+        } catch (e) {}
       }
     } catch (e) {
       console.error(e);

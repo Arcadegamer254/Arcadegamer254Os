@@ -29,16 +29,7 @@ export function WebView({ source, style, onLoadStart, onLoadEnd }: WebViewProps)
     );
   }
 
-  // Use require to avoid web bundler issues with native modules
-  const RNWebView = require('react-native-webview').WebView;
-  return (
-    <RNWebView
-      source={source}
-      style={style}
-      onLoadStart={onLoadStart}
-      onLoadEnd={onLoadEnd}
-    />
-  );
+  return null; // Native webview disabled for now
 }
 
 const styles = StyleSheet.create({

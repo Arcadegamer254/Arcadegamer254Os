@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Search, Download, Check, Package as PackageIcon } from 'lucide-react-native';
 
+import { systemApi } from '../../services/system';
+import { Platform } from 'react-native';
+
 export function PackageManager() {
   const [activeTab, setActiveTab] = useState('search');
   const [query, setQuery] = useState('');
@@ -56,6 +59,25 @@ export function PackageManager() {
         setInstallLog(prev => prev + `\nSuccess:\n${data.output}`);
         // Update search results to show as installed
         setSearchResults(prev => prev.map(p => p.name === pkgName ? { ...p, installed: true } : p));
+        
+        // Add to desktop
+        try {
+          const pers = await systemApi.getPersonalization();
+          const desktopApps = pers.desktopApps || [];
+          const appName = pkgName.charAt(0).toUpperCase() + pkgName.slice(1);
+          if (!desktopApps.find((a: any) => a.name === appName)) {
+            const newApp = {
+              name: appName,
+              exec: pkgName,
+              icon: 'box'
+            };
+            const newDesktopApps = [...desktopApps, newApp];
+            await systemApi.updatePersonalization({ desktopApps: newDesktopApps });
+            if (Platform.OS === 'web') {
+              window.dispatchEvent(new Event('pers-updated'));
+            }
+          }
+        } catch (e) {}
       }
     } catch (e: any) {
       setInstallLog(prev => prev + `\nException: ${e.message}`);

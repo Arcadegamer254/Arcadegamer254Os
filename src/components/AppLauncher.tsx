@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Dimensions, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Dimensions, Pressable, Platform } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { Search, ChevronUp } from 'lucide-react-native';
 import { useWindowManager } from '../contexts/WindowManagerContext';
 import { getAppIcon } from '../utils/icons';
 import { playSound } from '../utils/sounds';
 import { getEmbedUrl } from '../utils/url';
+import { systemApi } from '../services/system';
 
 const { width, height } = Dimensions.get('window');
 
@@ -69,6 +70,22 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     }
   };
 
+  const addToDesktop = async (app: any) => {
+    try {
+      const pers = await systemApi.getPersonalization();
+      const desktopApps = pers.desktopApps || [];
+      if (!desktopApps.find((a: any) => a.name === app.name)) {
+        const newDesktopApps = [...desktopApps, app];
+        await systemApi.updatePersonalization({ desktopApps: newDesktopApps });
+        if (Platform.OS === 'web') {
+          window.dispatchEvent(new Event('pers-updated'));
+        }
+      }
+    } catch (e) {
+      console.error("Failed to add to desktop", e);
+    }
+  };
+
   const filteredApps = apps.filter(app => {
     return app.name.toLowerCase().includes(search.toLowerCase()) || app.exec.toLowerCase().includes(search.toLowerCase());
   });
@@ -127,6 +144,7 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 >
                   <TouchableOpacity
                     onPress={() => launchApp(app)}
+                    onLongPress={() => addToDesktop(app)}
                     style={styles.appItem}
                   >
                     <View style={styles.appIconContainer}>
