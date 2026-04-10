@@ -22,13 +22,11 @@ export function BootScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <View style={styles.container}>
       <Animated.View 
-        entering={FadeIn.duration(800)}
         style={styles.content}
       >
         <Text style={styles.title}>Arcadegamer254 os</Text>
         
         <Animated.View 
-          entering={SlideInDown.delay(600).duration(500)}
           style={styles.subtitleRow}
         >
           <View style={styles.divider} />

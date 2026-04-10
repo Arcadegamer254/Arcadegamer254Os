@@ -179,16 +179,12 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
   return (
     <>
       <Animated.View 
-        entering={FadeIn.duration(200)}
-        exiting={FadeOut.duration(200)}
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       
       <Animated.View 
-        entering={SlideInDown.duration(200)}
-        exiting={SlideOutDown.duration(200)}
         style={[styles.panel, getPositionStyle()]}
       >
         {/* Header / Date */}

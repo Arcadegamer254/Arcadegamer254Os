@@ -96,16 +96,12 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     <>
       {/* Chrome OS style full-screen blurred background */}
       <Animated.View 
-        entering={FadeIn.duration(200)}
-        exiting={FadeOut.duration(200)}
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       
       <Animated.View 
-        entering={SlideInDown.springify().damping(25).stiffness(300)}
-        exiting={SlideOutDown.duration(200)}
         style={styles.launcherContainer}
       >
         {/* Search Bar Area */}
@@ -139,7 +135,6 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               {filteredApps.map((app, i) => (
                 <Animated.View 
                   key={i}
-                  entering={ZoomIn.delay(i * 10)}
                   style={styles.appItemContainer}
                 >
                   <TouchableOpacity

@@ -111,7 +111,6 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
       <View style={[styles.bgCircle, styles.bgCirclePurple]} />
 
       <Animated.View 
-        entering={SlideInDown.duration(800)}
         style={styles.contentContainer}
       >
         <Text style={styles.title}>Arcadegamer254 os</Text>
@@ -122,13 +121,13 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
           <View style={styles.divider} />
         </View>
 
-        <Animated.View entering={FadeIn.delay(500)} style={styles.metricsBox}>
+        <Animated.View style={styles.metricsBox}>
           <Text style={styles.metricsLabel}>SYSTEM METRICS</Text>
           <Text style={styles.metricsValue}>{bootTime}</Text>
         </Animated.View>
 
         {mode === 'setup' ? (
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.card}>
+          <Animated.View style={styles.card}>
             <View style={styles.iconContainer}>
               <UserPlus color="white" size={40} />
             </View>
@@ -178,7 +177,7 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
             </View>
           </Animated.View>
         ) : (
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.card}>
+          <Animated.View style={styles.card}>
             <View style={[styles.iconContainer, styles.iconContainerLogin]}>
               <User color="white" size={48} />
             </View>
