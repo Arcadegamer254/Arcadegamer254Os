@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, GestureResponderEvent, Platform } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, GestureResponderEvent, Platform, Pressable } from 'react-native';
 import { WebView } from './WebView';
 import { useOSStore } from '../store/osStore';
 import { Window } from './Window';
@@ -31,6 +31,8 @@ export function Desktop() {
     desktopApps: []
   });
 
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'desktop' | 'app', app?: AppType } | null>(null);
+
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const handleKeyDown = (e: any) => {
@@ -39,9 +41,15 @@ export function Desktop() {
         setOverviewMode(!overviewMode);
       }
     };
+    const handleClick = () => setContextMenu(null);
+    
     if (Platform.OS === 'web') {
       window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+      window.addEventListener('click', handleClick);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('click', handleClick);
+      };
     }
   }, [overviewMode, setOverviewMode]);
 
@@ -89,8 +97,7 @@ export function Desktop() {
     }
   };
 
-  const removeFromDesktop = async (e: GestureResponderEvent, appToRemove: AppType) => {
-    if (e && e.stopPropagation) e.stopPropagation();
+  const removeFromDesktop = async (appToRemove: AppType) => {
     try {
       const newDesktopApps = pers.desktopApps.filter((app: AppType) => app.name !== appToRemove.name);
       await systemApi.updatePersonalization({ desktopApps: newDesktopApps });
@@ -144,6 +151,21 @@ export function Desktop() {
     }
   };
 
+  const handleDesktopContextMenu = (e: any) => {
+    if (Platform.OS === 'web') {
+      e.preventDefault();
+      setContextMenu({ x: e.clientX, y: e.clientY, type: 'desktop' });
+    }
+  };
+
+  const handleAppContextMenu = (e: any, app: AppType) => {
+    if (Platform.OS === 'web') {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({ x: e.clientX, y: e.clientY, type: 'app', app });
+    }
+  };
+
   const renderComponent = (win: any) => {
     if (win.component === 'webapp') {
       return (
@@ -165,7 +187,11 @@ export function Desktop() {
   };
 
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      // @ts-ignore
+      onContextMenu={handleDesktopContextMenu}
+    >
       {/* Desktop Background */}
       <ImageBackground 
         source={{ uri: pers.wallpaper }} 
@@ -178,20 +204,21 @@ export function Desktop() {
       {/* Desktop Icons */}
       <View style={styles.iconsContainer}>
         {pers.desktopApps?.map((app: AppType, i: number) => (
-          <AppIcon
-            key={i}
-            app={app}
-            index={i}
-            isDragged={draggedIndex === i}
-            isDragOver={dragOverIndex === i}
-            onLaunch={launchApp}
-            onRemove={removeFromDesktop}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          />
+          <View key={i} /* @ts-ignore */ onContextMenu={(e) => handleAppContextMenu(e, app)}>
+            <AppIcon
+              app={app}
+              index={i}
+              isDragged={draggedIndex === i}
+              isDragOver={dragOverIndex === i}
+              onLaunch={launchApp}
+              onRemove={(e, app) => removeFromDesktop(app)}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            />
+          </View>
         ))}
       </View>
 
@@ -203,6 +230,34 @@ export function Desktop() {
           </Window>
         ))}
       </View>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <View style={[styles.contextMenu, { left: contextMenu.x, top: contextMenu.y }]}>
+          {contextMenu.type === 'desktop' ? (
+            <>
+              <Pressable style={styles.contextMenuItem} onPress={() => { openWindow('settings', 'Settings', 'settings'); setContextMenu(null); }}>
+                <Text style={styles.contextMenuText}>Change Wallpaper</Text>
+              </Pressable>
+              <Pressable style={styles.contextMenuItem} onPress={() => { openWindow('files', 'File Explorer', 'files'); setContextMenu(null); }}>
+                <Text style={styles.contextMenuText}>Open File Explorer</Text>
+              </Pressable>
+              <Pressable style={styles.contextMenuItem} onPress={() => { openWindow('terminal', 'Terminal', 'terminal'); setContextMenu(null); }}>
+                <Text style={styles.contextMenuText}>Open Terminal</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Pressable style={styles.contextMenuItem} onPress={() => { if(contextMenu.app) launchApp(contextMenu.app); setContextMenu(null); }}>
+                <Text style={styles.contextMenuText}>Open</Text>
+              </Pressable>
+              <Pressable style={styles.contextMenuItem} onPress={() => { if(contextMenu.app) removeFromDesktop(contextMenu.app); setContextMenu(null); }}>
+                <Text style={styles.contextMenuText}>Unpin from Desktop</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      )}
 
       {/* Taskbar */}
       <Taskbar />
@@ -238,5 +293,28 @@ const styles = StyleSheet.create({
   },
   unknownApp: {
     padding: 16,
+  },
+  contextMenu: {
+    position: 'absolute',
+    backgroundColor: '#1f2937',
+    borderWidth: 1,
+    borderColor: '#374151',
+    borderRadius: 6,
+    paddingVertical: 4,
+    minWidth: 160,
+    zIndex: 9999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  contextMenuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  contextMenuText: {
+    color: '#e5e7eb',
+    fontSize: 14,
   }
 });

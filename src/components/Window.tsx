@@ -136,6 +136,28 @@ export function Window({ window, children, index = 0, totalWindows = 1 }: { wind
       }
     });
 
+  const startWidth = useSharedValue(0);
+  const startHeight = useSharedValue(0);
+
+  const resizeGesture = Gesture.Pan()
+    .enabled(!overviewMode && window.status === 'normal')
+    .onStart(() => {
+      runOnJS(focusWindow)(window.id);
+      startWidth.value = width.value;
+      startHeight.value = height.value;
+    })
+    .onUpdate((e) => {
+      if (window.status === 'normal') {
+        width.value = Math.max(300, startWidth.value + e.translationX);
+        height.value = Math.max(200, startHeight.value + e.translationY);
+      }
+    })
+    .onEnd(() => {
+      if (window.status === 'normal') {
+        runOnJS(updateWindow)(window.id, { width: width.value, height: height.value });
+      }
+    });
+
   if (window.status === 'minimized') return null;
 
   return (
@@ -177,6 +199,13 @@ export function Window({ window, children, index = 0, totalWindows = 1 }: { wind
         <View style={styles.content} pointerEvents={overviewMode ? 'none' : 'auto'}>
           {children}
         </View>
+
+        {/* Resize Handle */}
+        {window.status === 'normal' && !overviewMode && (
+          <GestureDetector gesture={resizeGesture}>
+            <View style={styles.resizeHandle} />
+          </GestureDetector>
+        )}
       </View>
     </Animated.View>
   );
@@ -236,5 +265,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: '#030712', // gray-950
+  },
+  resizeHandle: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    backgroundColor: 'transparent',
+    // @ts-ignore
+    cursor: 'nwse-resize',
+    zIndex: 10,
   }
 });
