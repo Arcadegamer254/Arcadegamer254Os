@@ -178,13 +178,13 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
 
   return (
     <>
-      <Animated.View 
+      <View 
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+      </View>
       
-      <Animated.View 
+      <View 
         style={[styles.panel, getPositionStyle()]}
       >
         {/* Header / Date */}
@@ -252,7 +252,7 @@ export function QuickSettings({ isOpen, onClose, position }: { isOpen: boolean, 
 
         {/* Calendar */}
         {renderCalendar()}
-      </Animated.View>
+      </View>
     </>
   );
 }

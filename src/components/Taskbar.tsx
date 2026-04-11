@@ -275,7 +275,7 @@ function TaskbarButton({ children, isActive, onPress }: { children: React.ReactN
       onPressIn={() => { scale.value = withSpring(0.9); }}
       onPressOut={() => { scale.value = withSpring(1); }}
       onPress={onPress}
-      style={[styles.taskbarButton, isActive ? styles.taskbarButtonActive : styles.taskbarButtonInactive]}
+      style={[styles.taskbarButton, isActive ? styles.taskbarButtonActive : styles.taskbarButtonInactive, animatedStyle]}
     >
       {children}
     </AnimatedPressable>

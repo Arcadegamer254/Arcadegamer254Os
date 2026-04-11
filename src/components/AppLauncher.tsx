@@ -86,8 +86,8 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     }
   };
 
-  const filteredApps = apps.filter(app => {
-    return app.name.toLowerCase().includes(search.toLowerCase()) || app.exec.toLowerCase().includes(search.toLowerCase());
+  const filteredApps = (apps || []).filter(app => {
+    return (app?.name || '').toLowerCase().includes(search.toLowerCase()) || (app?.exec || '').toLowerCase().includes(search.toLowerCase());
   });
 
   if (!isOpen) return null;
@@ -95,13 +95,13 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   return (
     <>
       {/* Chrome OS style full-screen blurred background */}
-      <Animated.View 
+      <View 
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+      </View>
       
-      <Animated.View 
+      <View 
         style={styles.launcherContainer}
       >
         {/* Search Bar Area */}
@@ -133,7 +133,7 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           ) : (
             <View style={styles.grid}>
               {filteredApps.map((app, i) => (
-                <Animated.View 
+                <View 
                   key={i}
                   style={styles.appItemContainer}
                 >
@@ -149,7 +149,7 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                       {app.name}
                     </Text>
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               ))}
             </View>
           )}
@@ -159,7 +159,7 @@ export function AppLauncher({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <TouchableOpacity style={styles.bottomChevron} onPress={onClose}>
           <ChevronUp color="#9ca3af" size={20} />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </>
   );
 }
@@ -173,12 +173,13 @@ const styles = StyleSheet.create({
   launcherContainer: {
     position: 'absolute',
     zIndex: 45,
-    left: '50%',
+    left: 0,
+    right: 0,
+    marginHorizontal: 'auto',
     bottom: 80,
-    transform: [{ translateX: -Math.min(width * 0.9, 672) / 2 }],
     width: '90%',
     maxWidth: 672,
-    height: height * 0.6,
+    height: '60%',
     maxHeight: 500,
     backgroundColor: 'rgba(17, 24, 39, 0.8)', // gray-900/80
     borderRadius: 24,
